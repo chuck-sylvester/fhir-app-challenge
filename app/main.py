@@ -1,7 +1,7 @@
 # -----------------------------------------------------------------
 # app/main.py
 # -----------------------------------------------------------------
-# Starting point for the fhir-app-challenge application
+# Starting point for fhir-app-challenge application
 #
 # Run from project root:
 #   uvicorn app.main:app --reload --port 8000
@@ -17,9 +17,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 import logging
+import os
 
 # Routes
-# from app.routers import aaa, bbb, ccc
+from app.routers import capability
 
 # Import settings object from app-level config file
 from app.config import settings
@@ -32,10 +33,11 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-print()
 print("-" * 60)
-print("     APP_NAME:", settings.app_name)
-print("      APP_ENV:", settings.app_env)
+print("       APP_NAME:", settings.app_name)
+print("    APP_VERSION:", settings.app_version)
+print("        APP_ENV:", settings.app_env)
+print("  FHIR_BASE_URL:", settings.fhir_base_url)
 print("-" * 60)
 
 # Initialize FastAPI app
@@ -46,12 +48,25 @@ app = FastAPI(
     debug=settings.app_debug
 )
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Mount static files directory
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+
+# Set up Jinja2 Templates directory with auto-reload for development
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+templates.env.auto_reload = True
+
+# Register all routers
+app.include_router(capability.router, tags="metadata")
+
+
 # Create temporary root route handler
 @app.get("/", name="root", include_in_schema=False)
 async def home(request: Request):
-    """Simple message now; redirect to home page later."""
-    return {
-        "message1": "Hello",
-        "message2": "World!",
-        "message3": "May great things happen today..."
-    }
+    """Redirect to home page."""
+    return templates.TemplateResponse(
+        request,
+        "index.html",
+        {"title": app.title}
+    )

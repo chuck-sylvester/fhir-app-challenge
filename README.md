@@ -14,7 +14,7 @@ This application primarily leverages a Python-based technology stack, along with
 | Layer          | Technology |
 |----------------|------------|
 | Backend        | Python 3.11 + FastAPI |
-| Frontend       | HTMX + Jinja2 Templates + Custom CSS |
+| Frontend       | HTMX + Jinja2 Templates + Tailwind CSS |
 | Clinical Data  | HAPI FHIR Server v7.0.0 (R4) |
 | App Database   | PostgreSQL 16 (pgvector/pgvector:pg16) |
 | Auth Server    | Keycloak 26.0 (Docker-hosted, SMART on FHIR) |

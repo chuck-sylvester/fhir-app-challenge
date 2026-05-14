@@ -4,3 +4,6 @@
 
 # FastAPI App
 fastapi[standard]
+
+# Supporting libraries
+requests

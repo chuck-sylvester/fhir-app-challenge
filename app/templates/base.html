@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scaled=1.0">
+    <title>{% block title %}{{ title }}{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="icon" href="/static/image/favicon-fhir-72.ico">
+    <link rel="stylesheet" href="https://kit.fontawesome.com/124182fb50.css">
+  </head>
+  <body class="bg-gray-100 text-gray-900">
+    <!-- Lefthand side navigation -->
+     <div class="flex h-screen overflow-hidden  ">
+      <nav class="w-64 h-screen sticky top-0 bg-gray-200 border-r border-gray-300 shadow-sm px-6 py-9">
+        <a href="/" class="hover:text-blue-700">
+          <h2><i class="fa-sharp fa-solid fa-heart-pulse fa-xl"></i>&nbsp;&nbsp;{{ title }}</h2>
+        </a>
+        <br><hr class="border-gray-400"><br>
+        <div class="space-y-3">
+          <a
+            href="/metadata"
+            hx-get="/metadata"
+            hx-target="#result"
+            hx-swap="innerHTML"
+            class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
+          >
+            <i class="fa-regular fa-fire"></i>
+            &nbsp;Metadata
+          </a>
+          <a
+            href="/Patient"
+            hx-get="/Patient"
+            class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
+          >
+            <i class="fa-regular fa-users"></i>
+            &nbsp;Patients
+          </a>
+          <a
+            href="/Search"
+            class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
+          >
+            <i class="fa-regular fa-magnifying-glass"></i>
+            &nbsp;Search
+          </a>
+          <a
+            href="/Create"
+            class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
+          >
+            <i class="fa-regular fa-user-plus"></i>
+            &nbsp;Create Patient
+          </a>
+          <a
+            href="/Activity"
+            class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
+          >
+            <i class="fa-regular fa-clock"></i>
+            &nbsp;Activity
+          </a>
+          <a
+            href="/Settings"
+            class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
+          >
+            <i class="fa-regular fa-gear"></i>
+            &nbsp;Settings
+          </a>
+        </div>
+      </nav>
+      <!-- Main Content -->
+      <main class="min-w-0 flex-1 px-8 py-6">
+        {% block content %}{% endblock %}
+      </main>
+     </div>
+  </body>
+</html>
