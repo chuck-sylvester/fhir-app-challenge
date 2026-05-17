@@ -2,13 +2,14 @@
   <h3 class="font-mono text-sm p-2">GET /Patient</h3>
   <hr class="p-2 border-gray-400">
   <table class="w-full text-sm text-left border border-gray-300 rounded">
-    <thead class="bg-gray-100 text-gray-600">
+    <thead class="bg-gray-50 text-gray-600">
       <tr>
         <th class="px-4 py-2 border-b border-gray-300">Name</th>
         <th class="px-4 py-2 border-b border-gray-300">Gender</th>
         <th class="px-4 py-2 border-b border-gray-300">Date of Birth</th>
         <th class="px-4 py-2 border-b border-gray-300">Age</th>
         <th class="px-4 py-2 border-b border-gray-300">Last Updated</th>
+        <th class="px-4 py-2 border-b border-gray-300"></th>
       </tr>
     </thead>
     <tbody>
@@ -25,7 +26,7 @@
       {% set init2 = entry.resource.name[0].family[:1] if entry.resource.name else "—" %}
       {% set initials = init1 + init2 %}
       {% set avatar_color = avatar_colors[loop.index0 % avatar_colors|length] %}
-      <tr class="border-b border-gray-200">
+      <tr class="border-b border-gray-200 bg-white hover:bg-yellow-50">
         <td class="px-4 py-2">
           <div class="flex items-center gap-2">
             <span class="inline-flex h-8 w-8 items-center justify-center rounded-full {{ avatar_color }} text-xs font-semibold">
@@ -52,6 +53,11 @@
         <td class="px-4 py-2">
           {% set last_updated = entry.resource.get("meta", {}).get("lastUpdated") %}
           {{ (last_updated[:10]) if last_updated else "—" }}
+        </td>
+        <td class="pr-6 py-2">                                                                                                     
+          <div class="flex justify-end">                                                                                         
+            <i class="fa-solid fa-ellipsis-vertical fa-lg"></i>
+          </div>
         </td>
       </tr>
       {% else %}

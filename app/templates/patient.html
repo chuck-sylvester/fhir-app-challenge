@@ -14,13 +14,25 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <button
+        <!-- <button
           type="button"
           class="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
         >
           <span aria-hidden="true"><i class="fa-regular fa-arrows-rotate"></i></span>
           <span>Refresh</span>
-        </button>
+        </button> -->
+
+          <a
+            href="/Patient/table"
+            hx-get="/Patient/table"
+            hx-target="#result"
+            hx-swap="innerHTML"
+            class="block rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+          >
+            <i class="fa-regular fa-arrows-rotate"></i>
+            <span>Refresh</span>
+          </a>
+
 
         <button
           type="button"
