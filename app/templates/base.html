@@ -18,7 +18,7 @@
         </a>
         <br><hr class="border-gray-400"><br>
         <div class="space-y-3">
-          <a
+          <!-- <a
             href="/metadata"
             hx-get="/metadata"
             hx-target="#result"
@@ -27,14 +27,26 @@
           >
             <i class="fa-regular fa-fire"></i>
             &nbsp;Metadata
-          </a>
+          </a> -->
           <a
             href="/Patient"
             hx-get="/Patient"
+            hx-target="#result"
+            hx-swap="innerHTML"
             class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
           >
             <i class="fa-regular fa-users"></i>
-            &nbsp;Patients
+            &nbsp;Patients (json)
+          </a>
+          <a
+            href="/Patient/table"
+            hx-get="/Patient/table"
+            hx-target="#result"
+            hx-swap="innerHTML"
+            class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
+          >
+            <i class="fa-regular fa-users"></i>
+            &nbsp;Patients (table)
           </a>
           <a
             href="/Search"

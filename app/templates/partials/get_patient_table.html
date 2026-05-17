@@ -1,0 +1,64 @@
+<div class="text-left">
+  <h3 class="font-mono text-sm p-2">GET /Patient</h3>
+  <hr class="p-2 border-gray-400">
+  <table class="w-full text-sm text-left border border-gray-300 rounded">
+    <thead class="bg-gray-100 text-gray-600">
+      <tr>
+        <th class="px-4 py-2 border-b border-gray-300">Name</th>
+        <th class="px-4 py-2 border-b border-gray-300">Gender</th>
+        <th class="px-4 py-2 border-b border-gray-300">Date of Birth</th>
+        <th class="px-4 py-2 border-b border-gray-300">Age</th>
+        <th class="px-4 py-2 border-b border-gray-300">Last Updated</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set avatar_colors = [
+        "bg-blue-100 text-blue-700",
+        "bg-emerald-100 text-emerald-700",
+        "bg-amber-100 text-amber-700",
+        "bg-rose-100 text-rose-700",
+        "bg-violet-100 text-violet-700",
+        "bg-cyan-100 text-cyan-700"
+        ] %}
+      {% for entry in results.get("entry", []) %}
+      {% set init1 = entry.resource.name[0].given[0][:1] if entry.resource.name and entry.resource.name[0].given else "" %}
+      {% set init2 = entry.resource.name[0].family[:1] if entry.resource.name else "—" %}
+      {% set initials = init1 + init2 %}
+      {% set avatar_color = avatar_colors[loop.index0 % avatar_colors|length] %}
+      <tr class="border-b border-gray-200">
+        <td class="px-4 py-2">
+          <div class="flex items-center gap-2">
+            <span class="inline-flex h-8 w-8 items-center justify-center rounded-full {{ avatar_color }} text-xs font-semibold">
+              {{ initials | upper }}
+            </span>          
+            <span>
+              {{
+                (entry.resource.name[0].given[0] if entry.resource.name and entry.resource.name[0].given else "-") +
+                (" ") +
+                (entry.resource.name[0].family if entry.resource.name else "—")
+              }}
+            </span>
+          </div>
+        </td>
+        <td class="px-4 py-2">
+          {{ entry.resource.gender if entry.resource.gender else "—" }}
+        </td>
+        <td class="px-4 py-2">
+          {{ entry.resource.birthDate if entry.resource.birthDate else "—" }}
+        </td>
+        <td class="px-4 py-2">
+          42
+        </td>
+        <td class="px-4 py-2">
+          {% set last_updated = entry.resource.get("meta", {}).get("lastUpdated") %}
+          {{ (last_updated[:10]) if last_updated else "—" }}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="4" class="px-4 py-2 text-gray-500">No patients found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
