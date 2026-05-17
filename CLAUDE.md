@@ -51,7 +51,7 @@ Keycloak 26.0 (port 8180)           ← OAuth2 / SMART on FHIR
 
 **Frontend**: HTMX handles dynamic updates without page reloads. Jinja2 renders server-side HTML. Tailwind CSS (CDN) for styling. FontAwesome kit `124182fb50` for icons.
 
-**Backend pattern**: Routers handle HTTP routing; services contain business logic and make outbound FHIR calls using the synchronous `requests` library.
+**Backend pattern**: Routers handle HTTP routing; services contain business logic and make outbound FHIR calls using the synchronous `requests` library. Auth routes use `authlib` with `httpx` (async) for the OAuth2/OIDC flow.
 
 **FHIR server selection**: Controlled by `FHIR_BASE_URL` in `.env` — point it at `FHIR_LOCAL_URL` (Docker on port 8080) or `FHIR_EXTERNAL_URL` (Medblocks-hosted) without code changes.
 
@@ -80,7 +80,7 @@ HAPI FHIR server configuration lives in `hapi.application.yaml` (Spring Boot con
 | PostgreSQL | localhost:5432 | Database |
 | Keycloak | http://localhost:8180 | Auth server |
 
-**Mock Keycloak users** (password: `fhir#challenge#2026`):
+**Mock Keycloak users** (password: `fhir#2026!`):
 - `clinician.alpha` — Dr. Alice Anderson, MD
 - `clinician.bravo` — Dr. Bob Brown, DO
 - `clinician.charlie` — Nurse Carol Chen, RN
@@ -88,4 +88,15 @@ HAPI FHIR server configuration lives in `hapi.application.yaml` (Spring Boot con
 
 ## Current State
 
-Early scaffolding — one endpoint implemented (`/metadata` → FHIR Capability Statement). Database connections are configured but no queries are written yet. Authentication flow is designed (SMART App Launch with PKCE) but not yet wired up.
+**Authentication** — Fully implemented. SMART App Launch with PKCE via Keycloak. Login, callback, and logout routes are live. Session-based `AuthMiddleware` in `main.py` protects all routes except `/login`, `/auth/callback`, `/logout`, and `/health`. Logged-in user's name and a logout button are displayed at the bottom of the left nav in `base.html`, reading from `request.session["user"]`.
+
+**Keycloak setup** — Realm `fachallenge`, client `fhir-demo` (confidential, standard flow). Two custom client scopes configured: `fhirUser` (Default, with User Attribute mapper) and `patient/*.read` (Optional). See `docs/keycloak-auth-setup.md` for full setup instructions.
+
+**Patient CRUD** — Service layer (`patient_service.py`) and routes (`patient.py`) are scaffolded:
+- `GET /Patient` — fetches patient list (JSON view, first 5 results)
+- `GET /Patient/table` — fetches patient list rendered as an HTML table with colored avatar initials and a placeholder action ellipsis column
+- `GET /Patient/{ptid}` — fetches a single patient by ID
+- `POST /Patient` — creates a hardcoded test patient (Claire Hartwell); not yet form-driven
+- `DELETE /Patient/{ptid}` — deletes a patient by ID
+
+**Not yet implemented** — Patient profile detail view, create/edit/delete UI forms, action menu on the ellipsis column, age calculation (hardcoded to 42), PostgreSQL queries, FHIR Practitioner reference (`fhirUser` — planned for a later phase).

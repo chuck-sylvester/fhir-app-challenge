@@ -26,13 +26,16 @@ This application primarily leverages a Python-based technology stack, along with
 
 ## Authentication
 
-This app demonstrates SMART on FHIR (OAuth2 + OIDC) authentication. Keycloak runs as a Docker container and serves as the authentication server. The implementation uses the SMART App Launch (standalone) flow with PKCE for provider portal login.
+This app implements SMART on FHIR (OAuth2 + OIDC) authentication. Keycloak runs as a Docker container and serves as the authentication server. The implementation uses the SMART App Launch (standalone) flow with PKCE. All routes are protected by session-based middleware; unauthenticated requests redirect to `/login`.
 
-**Keycloak configuration**  
+**Keycloak configuration**
 
 - Realm: `fachallenge`
-- Client: `fhir-demo`
+- Client: `fhir-demo` (confidential, standard flow + PKCE)
+- Client scopes: `fhirUser` (Default), `patient/*.read` (Optional)
 - Admin console: `http://localhost:8180`
+
+See `docs/keycloak-auth-setup.md` for full setup instructions for both local and OCI environments.
 
 **Mock Users**
 
@@ -51,7 +54,7 @@ This app demonstrates SMART on FHIR (OAuth2 + OIDC) authentication. Keycloak run
 cp .env.example .env
 
 # Edit .env values for:  
-# POSTGRESS_APP_PASSWORD, POSTGRES_HAPI_PASSWORD, KEYCLOAK_ADMIN_PASSWORD, SESSION_SECRET_KEY
+# POSTGRES_APP_PASSWORD, POSTGRES_HAPI_PASSWORD, KEYCLOAK_ADMIN_PASSWORD, KEYCLOAK_CLIENT_SECRET, SESSION_SECRET_KEY
 ```
 
 ### 2. Create Docker Infrastructure
@@ -116,18 +119,7 @@ FHIR_BASE_URL=${FHIR_LOCAL_URL}    # local Docker instance (http://localhost:808
 FHIR_BASE_URL=${FHIR_EXTERNAL_URL} # external server (https://fhir.medblocks.com/fhir/<identifier>)
 ```
 
-## Authentication (OIDC) & Authorization (OAuth2)
-
-SMART on FHIR Authentication (AuthN) via OpenID Connect (OIDC) and Authorization (AuthZ) via OAuth 2.0 is in progress. Keycloak runs as a Docker container and serves as an open-source Identity and Access Management (IAM) server. The implementation uses the SMART App Launch (standalone) flow with PKCE for provider portal login.
-
-Note that Docker and Keycloak configuration must be performed independently in each environment, local dev machine and OCI.
-
-**Keycloak configuration**  
-- Create the FHIR-App-Challenge Realm: `fachallenge`
-- Create the Client: `fhir-demo`  
-- Admin console: `http://localhost:8180`
-
-**Verify the Discovery Document**  
+**Verify the Discovery Document**
 ```bash
 curl -s http://localhost:8180/realms/fachallenge/.well-known/openid-configuration \
   | python3 -m json.tool | head -20

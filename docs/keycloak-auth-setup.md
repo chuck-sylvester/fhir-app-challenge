@@ -135,7 +135,7 @@ Repeat the following steps for each user in the table below.
 | `clinician.charlie` | Carol | Chen | RN |
 | `clinician.delta` | David | Davis | PharmD |
 
-**Shared password:** `fhir#challenge#2026`
+**Shared password:** `fhir#2026!`
 
 ---
 
