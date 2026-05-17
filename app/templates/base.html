@@ -46,7 +46,10 @@
             &nbsp;Search
           </a>
           <a
-            href="/Create"
+            href="/Patient/new"
+            hx-get="/Patient/new"
+            hx-target="#modal-root"
+            hx-swap="innerHTML"
             class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
           >
             <i class="fa-regular fa-user-plus"></i>
@@ -86,5 +89,9 @@
         {% block content %}{% endblock %}
       </main>
      </div>
+
+     <!-- placeholder for Create Patient modal -->
+     <!-- when user clicks Create Patient, HTMX loads the modal partial here -->
+     <div id="modal-root"></div> 
   </body>
 </html>
