@@ -102,7 +102,7 @@ templates.env.auto_reload = True
 # Register all routers
 app.include_router(capability.router, tags="metadata")
 app.include_router(patient.router, tags="patient")
-app.include_router(auth.router, tags="auth")
+app.include_router(auth.router, tags="authentication")
 
 
 # Create temporary root route handler (later adjust for login flow)

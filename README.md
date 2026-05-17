@@ -28,22 +28,20 @@ This application primarily leverages a Python-based technology stack, along with
 
 This app demonstrates SMART on FHIR (OAuth2 + OIDC) authentication. Keycloak runs as a Docker container and serves as the authentication server. The implementation uses the SMART App Launch (standalone) flow with PKCE for provider portal login.
 
-**Keycloak configuration (local)**  
+**Keycloak configuration**  
 
-- Realm: `fhir-app-challenge`
-- Client: `patient-portal`
-- Admin console: `http://localhost:8110`
+- Realm: `fachallenge`
+- Client: `fhir-demo`
+- Admin console: `http://localhost:8180`
 
 **Mock Users**
 
-| Username           | Display Name                   | Role     |
-|--------------------|--------------------------------|----------|
-| clinician.alpha    | Dr. Alice Anderson, MD         | TBD      |
-| clinician.bravo    | Dr. Bob Brown, DO              | TBD      |
-| clinician.charlie  | Nurse Carol Chen, RN           | TBD      |
-| clinician.delta    | Pharmacist David Davis, PharmD | TBD      |
-
-**Password (all users):** `fhir#challenge#2026`
+| Username          | Email                        | First name | Last Name | Password   | Role |
+|-------------------|------------------------------|------------|-----------|------------|------| 
+| clinician.alpha   | clinician.alpha@clinic.org   | Alice      | Anderson  | fhir#2026! | TBD  |
+| clinician.bravo   | clinician.bravo@clinic.org   | Bob        | Brown     | fhir#2026! | TBD  |
+| clinician.charlie | clinician.charlie@clinic.org | Carol      | Chen      | fhir#2026! | TBD  |
+| clinician.delta   | clinician.delta@clinic.org   | David      | Davis     | fhir#2026! | TBD  |
 
 ## Quick Start
 
@@ -109,23 +107,32 @@ To run application and supporting services:
 | HAPI FHIR server       | `http://localhost:8080/fhir` |
 | Keycloak admin console | `http://localhost:8180`      |
 
-# FHIR Server
+## FHIR Server
 
 The application supports switching between a local and an external HAPI FHIR server via `.env`:
 
 ```env
 FHIR_BASE_URL=${FHIR_LOCAL_URL}    # local Docker instance (http://localhost:8080/fhir)
-FHIR_BASE_URL=${FHIR_EXTERNAL_URL} # external server (https://fhir-bootcamp.medblocks.com/fhir)
+FHIR_BASE_URL=${FHIR_EXTERNAL_URL} # external server (https://fhir.medblocks.com/fhir/<identifier>)
 ```
 
-## Authentication
+## Authentication (OIDC) & Authorization (OAuth2)
 
-SMART on FHIR (OAuth2 + OIDC) authentication is in progress. Keycloak runs as a Docker container and serves as the authorization server. The implementation uses the SMART App Launch (Standalone) flow with PKCE for provider portal login.
+SMART on FHIR Authentication (AuthN) via OpenID Connect (OIDC) and Authorization (AuthZ) via OAuth 2.0 is in progress. Keycloak runs as a Docker container and serves as an open-source Identity and Access Management (IAM) server. The implementation uses the SMART App Launch (standalone) flow with PKCE for provider portal login.
 
-**Keycloak configuration (local):**
-- Realm: `med-challenge`
-- Client: `womens-health-portal`
+Note that Docker and Keycloak configuration must be performed independently in each environment, local dev machine and OCI.
+
+**Keycloak configuration**  
+- Create the FHIR-App-Challenge Realm: `fachallenge`
+- Create the Client: `fhir-demo`  
 - Admin console: `http://localhost:8180`
+
+**Verify the Discovery Document**  
+```bash
+curl -s http://localhost:8180/realms/fachallenge/.well-known/openid-configuration \
+  | python3 -m json.tool | head -20
+```
+
 ---
 
 This is a publicly available repository that was created as a learning and demonstration project. It is not suited for production, so any use of this code should take that into account. Copyright (c) 2026 Chuck Sylvester. All rights reserved.

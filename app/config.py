@@ -32,8 +32,8 @@ class Settings (BaseSettings):
 
     # Keycloak / SMART auth
     keycloak_url: str = "http://localhost:8180"
-    keycloak_realm: str = "med-challenge"
-    keycloak_client_id: str = "womens-health-portal"
+    keycloak_realm: str = "fachallenge"
+    keycloak_client_id: str = "fhir-demo"
     keycloak_client_secret: str
     session_secret_key: str
 
