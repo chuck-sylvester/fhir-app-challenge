@@ -246,11 +246,74 @@ The `--host 0.0.0.0` flag is required on the VM so the app binds to the public n
 
 ---
 
+## Realm Export and Import
+
+Once the `fachallenge` realm is fully configured, Keycloak can export it to a JSON file. On any future fresh deployment, Keycloak imports that file automatically at startup — eliminating all manual configuration steps in this guide.
+
+### Export the realm
+
+Run this from whichever environment has the fully configured realm (local or OCI):
+
+```bash
+docker exec -it fac-keycloak /opt/keycloak/bin/kc.sh export \
+  --dir /tmp/export \
+  --realm fachallenge \
+  --users realm_file
+```
+
+Copy the file out of the container to the project:
+
+```bash
+# Create the destination directory first
+mkdir -p keycloak
+
+docker cp fac-keycloak:/tmp/export/fachallenge-realm.json ./keycloak/fachallenge-realm.json
+```
+
+> **Security note:** The exported file contains the `fhir-demo` client secret in plain text. Do not commit it to a public repository. Add `keycloak/` to `.gitignore` or store the file in a secrets manager for production use.
+
+### What the export includes
+
+- Realm settings, including `sslRequired=NONE` if already patched via `kcadm.sh`
+- The `fhir-demo` client configuration
+- Client scopes (`fhirUser`, `patient/*.read`) and their mappers
+- Test users with hashed credentials
+
+**Important — environment-specific redirect URIs:** The exported JSON contains the client redirect URIs from the environment where the export was done (e.g., `localhost` or an OCI public IP). After importing to a different environment, you must still update the `fhir-demo` client's redirect URIs to match the new host. See step 3.2 (local) or step 4 (OCI) of this guide.
+
+### Import on a fresh deployment
+
+Place the exported JSON in the `keycloak/` directory at the project root. Update `docker-compose.yaml` to mount the file and enable auto-import at startup:
+
+```yaml
+keycloak:
+  command: start-dev --import-realm
+  ...
+  volumes:
+    - keycloak_data:/opt/keycloak/data
+    - ./keycloak/fachallenge-realm.json:/opt/keycloak/data/import/fachallenge-realm.json:ro
+```
+
+On first boot Keycloak imports the realm automatically. Because `sslRequired=NONE` is baked into the export, the OCI `kcadm.sh` SSL fix step is no longer needed on future deployments.
+
+After startup, the only remaining manual steps are:
+
+| Step | Local | OCI |
+|---|---|---|
+| Update `.env` with correct host values | Use `localhost` defaults | Set `KEYCLOAK_URL` and `APP_BASE_URL` to public IP |
+| Update `fhir-demo` client redirect URIs | Only if exporting from OCI to local | Yes — update to public IP (step 4) |
+| Set `KEYCLOAK_CLIENT_SECRET` in `.env` | Copy from Credentials tab | Copy from Credentials tab |
+
+> Keycloak skips the import if the realm already exists in the persistent volume, so it is safe to leave `--import-realm` in the command permanently. To force a re-import on an existing deployment, first remove the volume: `docker volume rm <project-name>_keycloak_data`.
+
+---
+
 ## Common Errors
 
 | Error | Cause | Fix |
 |---|---|---|
 | Keycloak container shows `unhealthy` immediately after starting | The Keycloak 26 image is based on Red Hat UBI minimal and does not include `curl`. Any healthcheck that calls `curl` will always fail. | The `docker-compose.yaml` healthcheck uses a pure-bash TCP check instead. If you see this on an older copy of the repo, pull the latest and re-run `docker compose up -d`. |
+| `We are sorry... HTTPS required` when accessing Keycloak via OCI public IP | Each Keycloak realm has a `sslRequired` setting that defaults to `EXTERNAL`. HTTP is permitted only from `localhost`; any other IP triggers this error — even in `start-dev` mode. | Run `kcadm.sh` inside the container to set `sslRequired=NONE` on the `master` and `fachallenge` realms. See the **Disable Keycloak's SSL requirement** section in the [OCI Deployment Guide](oci-deployment-guide.md). |
 | `httpx.ConnectError: nodename nor servname provided` | `KEYCLOAK_URL` has a hostname that can't be resolved | Confirm `KEYCLOAK_URL` uses `localhost` (local) or the VM's public IP (OCI), not the Docker-internal hostname `keycloak` |
 | Browser redirected to `localhost` Keycloak login page when accessing via OCI public IP | `KEYCLOAK_URL` is set to `localhost` on the VM — Keycloak builds redirect URLs from the incoming `Host` header | Set `KEYCLOAK_URL=http://<OCI_PUBLIC_IP>:8180` in `.env` on the VM |
 | `OAuthError: invalid_redirect_uri` after logout | `post_logout_redirect_uri` not registered in Keycloak client | Ensure the client's **Valid post logout redirect URIs** includes `http://<host>:8000/login` (note the `/login` path) |

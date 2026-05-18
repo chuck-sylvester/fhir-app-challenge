@@ -83,6 +83,37 @@ Expected startup times on an OCI VM:
 
 The Keycloak 26 image (`quay.io/keycloak/keycloak:26.0`) is based on Red Hat UBI minimal and does not include `curl`. The `docker-compose.yaml` healthcheck therefore uses a pure-bash TCP check rather than a `curl` command. Keycloak's `start_period` is set to 120 seconds, so the container will report `starting` during that window and will not be marked `unhealthy` prematurely. On a resource-constrained VM, allow up to 3 minutes before expecting a `healthy` status.
 
+### Disable Keycloak's SSL requirement for external IPs
+
+Once Keycloak is healthy, you must disable its realm-level SSL policy before the admin console is accessible via the public IP.
+
+**Root cause:** Every Keycloak realm has a `sslRequired` setting that defaults to `EXTERNAL`. In this mode, HTTP is allowed only for `localhost`; any other IP triggers a "HTTPS required" error page — even in `start-dev` mode and even if Keycloak itself has no HTTPS listener. Accessing the VM via its public IP is considered "external".
+
+Run these commands from the VM (they target the container's internal port, so they bypass the external-IP restriction):
+
+```bash
+# Step 1: Authenticate with the Keycloak admin API (uses internal port 8080)
+docker exec -it fac-keycloak /opt/keycloak/bin/kcadm.sh config credentials \
+  --server http://localhost:8080 \
+  --realm master \
+  --user admin \
+  --password <KEYCLOAK_ADMIN_PASSWORD>
+
+# Step 2: Disable SSL requirement on the master realm
+docker exec -it fac-keycloak /opt/keycloak/bin/kcadm.sh update realms/master \
+  -s sslRequired=NONE
+```
+
+After step 2, `http://<OCI_PUBLIC_IP>:8180/admin` should load in the browser. Continue with the [Keycloak Authentication Setup](keycloak-auth-setup.md) guide (steps 3.1–3.4) to create the `fachallenge` realm and client. After step 3.1 (realm creation), immediately return to the VM and run:
+
+```bash
+# Step 3: Disable SSL requirement on the fachallenge realm
+docker exec -it fac-keycloak /opt/keycloak/bin/kcadm.sh update realms/fachallenge \
+  -s sslRequired=NONE
+```
+
+This must be done before continuing Keycloak configuration, as the browser will otherwise be blocked from any `fachallenge` realm page.
+
 ---
 
 ## Start the Application
