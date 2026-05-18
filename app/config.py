@@ -17,6 +17,7 @@ class Settings (BaseSettings):
     app_version: str = "0.0.0.0"
     app_env: str = "development"
     app_debug: bool = False
+    app_base_url: str = "http://localhost:8000"
 
     # Logging
     log_level: str = "INFO"

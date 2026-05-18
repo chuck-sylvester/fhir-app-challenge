@@ -21,3 +21,7 @@ venv
 venv/
 .venv/
 venv.bak/
+
+# Files created on OCI
+nohup.out
+uvicorn.log

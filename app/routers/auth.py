@@ -72,14 +72,10 @@ async def logout(request: Request):
     Optionally redirect to Keycloak for single sign-out.
     """
     request.session.clear()
-    # For Keycloak single sign-out (clears Keycloak session too)
-    # Uncomment below for full app + keycloak signout
-    # Comment it out to only logout of app and keep keycloak session active
     keycloak_logout_url = (
         f"{settings.keycloak_url}/realms/{settings.keycloak_realm}"
         f"/protocol/openid-connect/logout"
-        f"?post_logout_redirect_uri=http://localhost:8000"
+        f"?post_logout_redirect_uri={settings.app_base_url}/login"
         f"&client_id={settings.keycloak_client_id}"
     )
     return RedirectResponse(url=keycloak_logout_url)
-    return RedirectResponse(url="/login")

@@ -68,7 +68,7 @@ Optionally, update the display name shown on the login page:
 | Field | Value |
 |---|---|
 | Valid redirect URIs | `http://localhost:8000/auth/callback` |
-| Valid post logout redirect URIs | `http://localhost:8000` |
+| Valid post logout redirect URIs | `http://localhost:8000/login` |
 | Web origins | `http://localhost:8000` |
 
 9. Click **Save**
@@ -144,12 +144,15 @@ Repeat the following steps for each user in the table below.
 Confirm these values are set in `.env`:
 
 ```
+APP_BASE_URL=http://localhost:8000
 KEYCLOAK_URL=http://localhost:8180
 KEYCLOAK_REALM=fachallenge
 KEYCLOAK_CLIENT_ID=fhir-demo
 KEYCLOAK_CLIENT_SECRET=<value from Credentials tab>
 SESSION_SECRET_KEY=<generated value>
 ```
+
+`APP_BASE_URL` is used as the `post_logout_redirect_uri` in the Keycloak logout redirect. It must match the **Valid post logout redirect URIs** value registered in the client (step 3.2).
 
 ### 5. Start the application
 
@@ -185,15 +188,18 @@ In the OCI Console, navigate to the VM's VCN → Security Lists and add the foll
 
 ### 2. Configure `.env` for OCI
 
-On the VM, edit `.env` and replace localhost references with the VM's public IP:
+On the VM, edit `.env` and set these values using the VM's **public IP address** (not `localhost`):
 
 ```
+APP_BASE_URL=http://<OCI_PUBLIC_IP>:8000
 KEYCLOAK_URL=http://<OCI_PUBLIC_IP>:8180
 KEYCLOAK_REALM=fachallenge
 KEYCLOAK_CLIENT_ID=fhir-demo
 KEYCLOAK_CLIENT_SECRET=<value from Credentials tab>
 SESSION_SECRET_KEY=<freshly generated value>
 ```
+
+Both `APP_BASE_URL` and `KEYCLOAK_URL` must use the public IP. See the [OCI Deployment Guide](oci-deployment-guide.md) for a full explanation of why.
 
 Generate a new session secret on the VM:
 ```bash
@@ -206,7 +212,13 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 docker compose up -d
 ```
 
-Wait for Keycloak to become healthy, then access the admin console at:
+Wait for Keycloak to become healthy before proceeding. On an OCI VM, Keycloak's JVM can take **up to 2 minutes** to fully initialize — the container will show `starting` during this window. Check status with:
+
+```bash
+docker compose ps
+```
+
+Once Keycloak shows `healthy`, access the admin console at:
 
 ```
 http://<OCI_PUBLIC_IP>:8180/admin
@@ -221,7 +233,7 @@ Follow **steps 3.1 through 3.4** from the local macOS section above, with one di
 | Field | Value |
 |---|---|
 | Valid redirect URIs | `http://<OCI_PUBLIC_IP>:8000/auth/callback` |
-| Valid post logout redirect URIs | `http://<OCI_PUBLIC_IP>:8000` |
+| Valid post logout redirect URIs | `http://<OCI_PUBLIC_IP>:8000/login` |
 | Web origins | `http://<OCI_PUBLIC_IP>:8000` |
 
 ### 5. Start the application
@@ -238,7 +250,10 @@ The `--host 0.0.0.0` flag is required on the VM so the app binds to the public n
 
 | Error | Cause | Fix |
 |---|---|---|
+| Keycloak container shows `unhealthy` immediately after starting | The Keycloak 26 image is based on Red Hat UBI minimal and does not include `curl`. Any healthcheck that calls `curl` will always fail. | The `docker-compose.yaml` healthcheck uses a pure-bash TCP check instead. If you see this on an older copy of the repo, pull the latest and re-run `docker compose up -d`. |
 | `httpx.ConnectError: nodename nor servname provided` | `KEYCLOAK_URL` has a hostname that can't be resolved | Confirm `KEYCLOAK_URL` uses `localhost` (local) or the VM's public IP (OCI), not the Docker-internal hostname `keycloak` |
+| Browser redirected to `localhost` Keycloak login page when accessing via OCI public IP | `KEYCLOAK_URL` is set to `localhost` on the VM — Keycloak builds redirect URLs from the incoming `Host` header | Set `KEYCLOAK_URL=http://<OCI_PUBLIC_IP>:8180` in `.env` on the VM |
+| `OAuthError: invalid_redirect_uri` after logout | `post_logout_redirect_uri` not registered in Keycloak client | Ensure the client's **Valid post logout redirect URIs** includes `http://<host>:8000/login` (note the `/login` path) |
 | `OAuthError: invalid_scope` | A requested scope doesn't exist in Keycloak | Create the missing client scope and assign it to the `fhir-demo` client (see 3.3) |
 | `OAuthError: invalid_redirect_uri` | Callback URL not registered in Keycloak | Add the exact redirect URI to the client's **Valid redirect URIs** list |
 | `500` after login, session not persisting | `SESSION_SECRET_KEY` missing or empty in `.env` | Generate and set a valid secret key |
