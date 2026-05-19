@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% set user = request.session.get('user') %}
 <section class="flex h-full min-w-0 flex-col overflow-hidden">
   <header class="sticky top-0 z-10 border-b border-gray-200 bg-gray-100 px-8 pt-0 pb-6  ">
     <div class="flex items-center justify-between gap-6">
@@ -39,8 +40,41 @@
   </header>
 
   <div class="min-w-0 flex-1 overflow-y-auto px-8 py-6">
-    <div id="result" class="min-w-0">
-      Data will appear here...
+    <div
+      id="result"
+      class="min-w-0"
+      hx-get="/Patient/table"
+      hx-trigger="patient-created from:body, patient-updated from:body, patient-deleted from:body"
+      hx-target="#result"
+      hx-swap="innerHTML"
+    >
+      <div class="flex items-center justify-center py-16">
+        <div class="text-center max-w-md bg-white border border-gray-200 rounded-xl px-10 py-10 shadow-sm">
+          <div class="mb-5">
+            <i class="fa-sharp fa-solid fa-heart-pulse text-blue-500 fa-3x"></i>
+          </div>
+
+          <h1 class="text-2xl font-semibold text-gray-600 tracking-tight">{{ title }}</h1>
+
+          {% if user %}
+          <p class="mt-2 text-lg text-gray-600">Welcome, {{ user.name }}</p>
+          {% endif %}
+
+          <p class="mt-4 text-base text-gray-500 leading-relaxed">
+            Medblocks 15-day FHIR App Challenge.<br>
+            A clinical patient management tool.<br>
+            Powered by HAPI FHIR.
+          </p>
+
+          <div class="mt-8 pt-6 border-t border-gray-200">
+            <p class="text-sm text-gray-500">
+              <i class="fa-regular fa-hand-point-left"></i>
+              Select an option from the left navigation to begin.
+            </p>
+          </div>
+
+        </div>
+      </div>
     </div>
   </div>
 </section>

@@ -7,11 +7,13 @@ from app.config import settings
 
 
 def get_patient(ptid: str = None):
+    """Get patient resource data, based on query string and query parameters"""
     base_url = settings.fhir_base_url
 
     headers = {
         "Accept": "application/fhir+json"
     }
+    
     if settings.fhir_external_api_token:
       headers["Authorization"] = f"Bearer {settings.fhir_external_api_token}" 
 
@@ -65,6 +67,42 @@ def create_patient(first_name: str, last_name: str, gender: str,
     return output.json()
 
 
+def update_patient(ptid: str, first_name: str, last_name: str, gender: str,
+                   birth_date: str, marital_status: str = "", phone: str = ""):
+    updated = {
+        "resourceType": "Patient",
+        "id": ptid,
+        "active": True,
+        "name": [{"use": "official", "family": last_name, "given": [first_name]}],
+        "gender": gender,
+        "birthDate": birth_date,
+    }
+    if phone:
+        updated["telecom"] = [{"system": "phone", "value": phone, "use": "home"}]
+    if marital_status:
+        display = _MARITAL_DISPLAY.get(marital_status, marital_status)
+        updated["maritalStatus"] = {
+            "coding": [{
+                "system": "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
+                "code": marital_status,
+                "display": display,
+            }],
+            "text": display,
+        }
+
+    headers = {"Content-Type": "application/fhir+json", "Accept": "application/fhir+json"}
+    if settings.fhir_external_api_token:
+        headers["Authorization"] = f"Bearer {settings.fhir_external_api_token}"
+
+    output = requests.put(
+        f"{settings.fhir_base_url}/Patient/{ptid}",
+        json=updated,
+        headers=headers
+    )
+    output.raise_for_status()
+    return output.json()
+
+
 def delete_patient(ptid: str):
     base_url = settings.fhir_base_url
 
@@ -72,7 +110,9 @@ def delete_patient(ptid: str):
         "Accept": "application/fhir+json"
     }
     if settings.fhir_external_api_token:
-      headers["Authorization"] = f"Bearer {settings.fhir_external_api_token}" 
+        headers["Authorization"] = f"Bearer {settings.fhir_external_api_token}"
 
     output = requests.delete(f"{base_url}/Patient/{ptid}", headers=headers)
-    return output.json()
+    if output.content:
+        return output.json()
+    return {}

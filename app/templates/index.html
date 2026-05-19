@@ -1,41 +1,32 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="flex h-full min-w-0 flex-col overflow-hidden">
-  <header class="sticky top-0 z-10 border-b border-gray-200 bg-gray-100 px-8 pt-0 pb-6  ">
-    <div class="flex items-center justify-between gap-6">
-      <div>
-        <h1 class="text-3xl font-semibold tracking-normal text-gray-950">
-          Patients
-        </h1>
-        <p class="mt-1 text-sm text-gray-600">
-          List of patients on the FHIR server.
-        </p>
-      </div>
+{% set user = request.session.get('user') %}
+<div id="result" class="h-full flex items-center justify-center">
+  <div class="text-center max-w-sm">
 
-      <div class="flex items-center gap-3">
-        <button
-          type="button"
-          class="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
-        >
-          <span aria-hidden="true"><i class="fa-regular fa-arrows-rotate"></i></span>
-          <span>Refresh</span>
-        </button>
-
-        <button
-          type="button"
-          class="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
-        >
-          + Create Patient
-        </button>
-      </div>
+    <div class="mb-5">
+      <i class="fa-sharp fa-solid fa-heart-pulse text-blue-500 fa-3x"></i>
     </div>
-  </header>
 
-  <div class="min-w-0 flex-1 overflow-y-auto px-8 py-6">
-    <div id="result" class="min-w-0">
-      Data will appear here...
+    <h1 class="text-2xl font-semibold text-gray-900 tracking-tight">{{ title }}</h1>
+
+    {% if user %}
+    <p class="mt-2 text-base text-gray-600">Welcome, {{ user.name }}</p>
+    {% endif %}
+
+    <p class="mt-4 text-sm text-gray-500 leading-relaxed">
+      A clinical patient management tool built on FHIR R4.<br>
+      Powered by HAPI FHIR and SMART App Launch.
+    </p>
+
+    <div class="mt-8 pt-6 border-t border-gray-200">
+      <p class="text-sm text-gray-400">
+        <i class="fa-regular fa-hand-pointer mr-1"></i>
+        Select an option from the left navigation to begin.
+      </p>
     </div>
+
   </div>
-</section>
+</div>
 {% endblock %}
