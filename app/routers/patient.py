@@ -17,7 +17,7 @@ async def get_patient(request: Request):
     data = patient_service.get_patient()
     return templates.TemplateResponse(
         request,
-        "partials/get_patient_result.html",
+        "partials/get_patient_json.html",
         {"results": data}
     )
 
@@ -46,7 +46,7 @@ async def get_patient(request: Request, ptid: str):
     data = patient_service.get_patient(ptid)
     return templates.TemplateResponse(
         request,
-        "partials/get_patient_result.html",
+        "partials/get_patient_json.html",
         {"results": data}
     )
 
@@ -58,13 +58,20 @@ async def post_patient(
     last_name: str = Form(...),
     gender: str = Form(...),
     birth_date: str = Form(...),
+    marital_status: str = Form(""),
     phone: str = Form(""),
     ):
-    data = patient_service.create_patient(first_name, last_name, gender, birth_date, phone)
-    return templates.TemplateResponse(
-        request,
-        "partials/create_patient_modal.html",
-        {"Success": True}
+    try:
+        patient_service.create_patient(first_name, last_name, gender, birth_date, marital_status, phone)
+    except Exception:
+        return templates.TemplateResponse(
+            request,
+            "partials/create_patient_modal.html",
+            {"error": "Failed to create patient. Please try again."},
+        )
+    # Close the modal and refresh the patient table in #result
+    return HTMLResponse(
+        '<div hx-get="/Patient/table" hx-target="#result" hx-swap="innerHTML" hx-trigger="load"></div>'
     )
 
 

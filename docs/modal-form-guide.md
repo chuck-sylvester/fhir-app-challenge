@@ -1,6 +1,6 @@
 # Modal Form Patterns for FastAPI, Jinja2, and HTMX
 
-This guide explains how modal dialogs work in web applications and how to implement them cleanly in this project using FastAPI, Jinja2 templates, and HTMX. It is written for the upcoming "Create Patient" feature, where a clinician can open a modal form from either the lefthand navigation or the patient page header, enter basic patient demographics, and save a new FHIR `Patient` resource.
+This guide explains how modal dialogs work in web applications and how to implement them cleanly in this project using FastAPI, Jinja2 templates, and HTMX. It is written for the "Create Patient" feature, where a clinician can open a modal form from either the lefthand navigation or the patient page header, enter basic patient demographics, and save a new FHIR `Patient` resource.
 
 ## 1. What a Modal Is
 
@@ -106,6 +106,7 @@ app/templates/
   base.html
   patient.html
   partials/
+    get_patient_json.html
     get_patient_table.html
     create_patient_modal.html
 ```

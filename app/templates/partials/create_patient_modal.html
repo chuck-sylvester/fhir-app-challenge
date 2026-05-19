@@ -32,6 +32,12 @@
       >
         <div class="px-6 py-4 space-y-4">
 
+          {% if error %}
+          <div class="rounded-md bg-red-50 border border-red-300 px-4 py-2 text-sm text-red-700">
+            {{ error }}
+          </div>
+          {% endif %}
+
           <!-- First Name -->
           <div>
             <label for="first_name" class="block text-sm font-medium text-gray-700">
@@ -93,6 +99,25 @@
             >
           </div>
 
+          <!-- Marital Status (optional) -->
+          <div>
+            <label for="marital_status" class="block text-sm font-medium text-gray-700">
+              Marital Status
+            </label>
+            <select
+              id="marital_status"
+              name="marital_status"
+              class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">-- Select --</option>
+              <option value="M">Married</option>
+              <option value="D">Divorced</option>
+              <option value="L">Legally Separated</option>
+              <option value="W">Widowed</option>
+              <option value="U">Never Married</option>
+            </select>
+          </div>
+
           <!-- Phone (optional) -->
           <div>
             <label for="phone" class="block text-sm font-medium text-gray-700">
@@ -105,7 +130,6 @@
               class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
           </div>
-
         </div>
 
         <!-- Footer: action buttons -->
