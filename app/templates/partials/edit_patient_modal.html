@@ -1,0 +1,156 @@
+<div class="fixed inset-0 z-50">
+
+  <!-- Backdrop -->
+  <div
+    class="fixed inset-0 bg-black/40"
+    onclick="document.getElementById('modal-root').innerHTML = ''"
+  ></div>
+
+  <!-- Centering wrapper -->
+  <div class="fixed inset-0 flex items-center justify-center p-4">
+    <section
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-patient-title"
+      class="relative w-full max-w-lg rounded-lg bg-white shadow-xl"
+    >
+      <!-- Header -->
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 id="edit-patient-title" class="text-lg font-semibold text-gray-800">
+          Edit Patient
+        </h2>
+      </div>
+
+      <!-- Form -->
+      <form
+        hx-put="/Patient/{{ ptid }}"
+        hx-target="#modal-root"
+        hx-swap="innerHTML"
+      >
+        <div class="px-6 py-4 space-y-4">
+
+          {% if error %}
+          <div class="rounded-md bg-red-50 border border-red-300 px-4 py-2 text-sm text-red-700">
+            {{ error }}
+          </div>
+          {% endif %}
+
+          <!-- First Name -->
+          <div>
+            <label for="edit_first_name" class="block text-sm font-medium text-gray-700">
+              First Name <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="edit_first_name"
+              name="first_name"
+              required
+              value="{{ first_name | default('') }}"
+              class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+          </div>
+
+          <!-- Last Name -->
+          <div>
+            <label for="edit_last_name" class="block text-sm font-medium text-gray-700">
+              Last Name <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="edit_last_name"
+              name="last_name"
+              required
+              value="{{ last_name | default('') }}"
+              class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+          </div>
+
+          <!-- Gender -->
+          <div>
+            <label for="edit_gender" class="block text-sm font-medium text-gray-700">
+              Gender <span class="text-red-500">*</span>
+            </label>
+            <select
+              id="edit_gender"
+              name="gender"
+              required
+              class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">-- Select --</option>
+              <option value="male"    {% if gender == 'male'    %}selected{% endif %}>Male</option>
+              <option value="female"  {% if gender == 'female'  %}selected{% endif %}>Female</option>
+              <option value="other"   {% if gender == 'other'   %}selected{% endif %}>Other</option>
+              <option value="unknown" {% if gender == 'unknown' %}selected{% endif %}>Unknown</option>
+            </select>
+          </div>
+
+          <!-- Date of Birth -->
+          <div>
+            <label for="edit_birth_date" class="block text-sm font-medium text-gray-700">
+              Date of Birth <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              id="edit_birth_date"
+              name="birth_date"
+              required
+              value="{{ birth_date | default('') }}"
+              class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+          </div>
+
+          <!-- Marital Status -->
+          <div>
+            <label for="edit_marital_status" class="block text-sm font-medium text-gray-700">
+              Marital Status
+            </label>
+            <select
+              id="edit_marital_status"
+              name="marital_status"
+              class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">-- Select --</option>
+              <option value="M" {% if marital_status == 'M' %}selected{% endif %}>Married</option>
+              <option value="D" {% if marital_status == 'D' %}selected{% endif %}>Divorced</option>
+              <option value="L" {% if marital_status == 'L' %}selected{% endif %}>Legally Separated</option>
+              <option value="W" {% if marital_status == 'W' %}selected{% endif %}>Widowed</option>
+              <option value="U" {% if marital_status == 'U' %}selected{% endif %}>Never Married</option>
+            </select>
+          </div>
+
+          <!-- Phone -->
+          <div>
+            <label for="edit_phone" class="block text-sm font-medium text-gray-700">
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              id="edit_phone"
+              name="phone"
+              value="{{ phone | default('') }}"
+              class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+          </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+          <button
+            type="button"
+            onclick="document.getElementById('modal-root').innerHTML = ''"
+            class="rounded-md px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+</div>

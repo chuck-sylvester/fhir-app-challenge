@@ -48,16 +48,19 @@
           {{ entry.resource.birthDate if entry.resource.birthDate else "—" }}
         </td>
         <td class="px-4 py-2">
-          42
+          {{ entry.resource.birthDate | age }}
         </td>
         <td class="px-4 py-2">
           {% set last_updated = entry.resource.get("meta", {}).get("lastUpdated") %}
           {{ (last_updated[:10]) if last_updated else "—" }}
         </td>
-        <td class="pr-6 py-2">                                                                                                     
-          <div class="flex justify-end">                                                                                         
-            <i class="fa-solid fa-ellipsis-vertical fa-lg"></i>
-          </div>
+        <td class="pr-6 py-2">
+          <button
+            class="block rounded-md px-2 py-2 hover:cursor-pointer hover:bg-blue-50"
+            onclick="patientAction('{{ entry.resource.id }}', this)"
+          >
+            <i class="fa-solid fa-ellipsis-vertical fa-lg px-2"></i>
+          </button>
         </td>
       </tr>
       {% else %}

@@ -14,20 +14,10 @@
      <div class="flex h-screen overflow-hidden  ">
       <nav class="flex flex-col w-64 h-screen sticky top-0 bg-gray-100 border-r border-gray-300 shadow-sm px-6 py-9">
         <a href="/" class="hover:text-blue-700">
-          <h2><i class="fa-sharp fa-solid fa-heart-pulse fa-xl"></i>&nbsp;&nbsp;{{ title }}</h2>
+          <h2>&nbsp;<i class="fa-sharp fa-solid fa-heart-pulse fa-xl"></i>&nbsp;&nbsp;{{ title }}</h2>
         </a>
         <br><hr class="border-gray-400"><br>
         <div class="flex-1 space-y-3">
-          <a
-            href="/Patient"
-            hx-get="/Patient"
-            hx-target="#result"
-            hx-swap="innerHTML"
-            class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
-          >
-            <i class="fa-regular fa-users"></i>
-            &nbsp;Patients (json)
-          </a>
           <a
             href="/Patient/table"
             hx-get="/Patient/table"
@@ -36,14 +26,27 @@
             class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
           >
             <i class="fa-regular fa-users"></i>
-            &nbsp;Patients (table)
+            &nbsp;&nbsp;Patients
           </a>
           <a
-            href="/Search"
+            href="/Patient"
+            hx-get="/Patient"
+            hx-target="#result"
+            hx-swap="innerHTML"
             class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
           >
-            <i class="fa-regular fa-magnifying-glass"></i>
-            &nbsp;Search
+            <i class="fa-regular fa-users"></i>
+            &nbsp;&nbsp;Patients (json)
+          </a>
+          <a
+            href="/Patient/xml"
+            hx-get="/Patient"
+            hx-target="#result"
+            hx-swap="innerHTML"
+            class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
+          >
+            <i class="fa-regular fa-users"></i>
+            &nbsp;&nbsp;Patients (xml)
           </a>
           <a
             href="/Patient/new"
@@ -53,21 +56,23 @@
             class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
           >
             <i class="fa-regular fa-user-plus"></i>
-            &nbsp;Create Patient
+            &nbsp;&nbsp;Create Patient
           </a>
+          <hr>
+          <a
+            href="/Search"
+            class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
+          >
+            <i class="fa-sharp-duotone fa-solid fa-chart-column"></i>
+            &nbsp;&nbsp;Report #1
+          </a>
+
           <a
             href="/Activity"
             class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
           >
-            <i class="fa-regular fa-clock"></i>
-            &nbsp;Activity
-          </a>
-          <a
-            href="/Settings"
-            class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
-          >
-            <i class="fa-regular fa-gear"></i>
-            &nbsp;Settings
+            <i class="fa-sharp-duotone fa-solid fa-chart-column"></i>
+            &nbsp;&nbsp;Report #2
           </a>
         </div>
         <!-- User Info & Logout Button -->
@@ -89,8 +94,17 @@
       </main>
      </div>
 
-     <!-- placeholder for Create Patient modal -->
-     <!-- when user clicks Create Patient, HTMX loads the modal partial here -->
+     <!-- placeholder for Create Patient modal content -->
      <div id="modal-root"></div> 
-  </body>
+     
+     <script src="/static/js/main.js"></script>
+     <script>
+       document.addEventListener('keydown', function(e) {
+         if (e.key === 'Escape') {
+           document.getElementById('modal-root').innerHTML = '';
+           closePatientMenu();
+         }
+       });
+     </script>
+    </body>
 </html>
