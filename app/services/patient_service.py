@@ -4,16 +4,15 @@
 
 import requests
 from app.config import settings
+import xml.etree.ElementTree as ET
 
 
 def get_patient(ptid: str = None):
     """Get patient resource data, based on query string and query parameters"""
     base_url = settings.fhir_base_url
 
-    headers = {
-        "Accept": "application/fhir+json"
-    }
-    
+    headers = {"Accept": "application/fhir+json"}
+
     if settings.fhir_external_api_token:
       headers["Authorization"] = f"Bearer {settings.fhir_external_api_token}" 
 
@@ -21,6 +20,13 @@ def get_patient(ptid: str = None):
         output = requests.get(f"{base_url}/Patient", headers=headers, params={"_count": 5})
     elif ptid == "table":
         output = requests.get(f"{base_url}/Patient", headers=headers)
+    elif ptid == "xml":
+        headers = {"Accept": "application/fhir+xml"}
+        headers["Authorization"] = f"Bearer {settings.fhir_external_api_token}" 
+        output = requests.get(f"{base_url}/Patient", headers=headers, params={"_count": 5})
+        root = ET.fromstring(output.text)
+        ET.indent(root, space="  ")
+        return ET.tostring(root, encoding="unicode")
     else:
         output = requests.get(f"{base_url}/Patient/{ptid}", headers=headers)
 

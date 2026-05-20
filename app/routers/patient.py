@@ -83,8 +83,20 @@ def _patient_to_context(patient: dict) -> dict:
 
 # --- List / table routes ---
 
+@router.get("/Patient/table", response_class=HTMLResponse)
+async def get_patient_table(request: Request):
+    """Get patients for display in HTML Table format"""
+    data = patient_service.get_patient("table")
+    return templates.TemplateResponse(
+        request,
+        "partials/get_patient_table.html",
+        {"results": data}
+    )
+
+
 @router.get("/Patient", response_class=HTMLResponse)
 async def get_patient_json(request: Request):
+    """Get patients for display in JSON format"""
     data = patient_service.get_patient()
     return templates.TemplateResponse(
         request,
@@ -93,12 +105,13 @@ async def get_patient_json(request: Request):
     )
 
 
-@router.get("/Patient/table", response_class=HTMLResponse)
-async def get_patient_table(request: Request):
-    data = patient_service.get_patient("table")
+@router.get("/Patient/xml", response_class=HTMLResponse)
+async def get_patient_xml(request: Request):
+    """Get patients for display in XML format"""
+    data = patient_service.get_patient("xml")
     return templates.TemplateResponse(
         request,
-        "partials/get_patient_table.html",
+        "partials/get_patient_xml.html",
         {"results": data}
     )
 

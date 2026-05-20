@@ -2,7 +2,13 @@
 
 The FHIR App Challenge application is deployed to and hosted within the Oracle Cloud Infrastructure (OCI) environment. The initial configuration mirrors the local development environment as a _Lift and Shift_ to a single VM.  
 
-Create and start a single Oracle Compute instance, pull down the application from the GitHub public repository, complete some initial setup, such as populating the .env file, and you will be in a position to get started. Then, run the existing docker-compose stack (PostgreSQL + HAPI FHIR + Keycloak) plus uvicorn (FastAPI) on the OCI VM exactly as you do locally.  
+To install, create and start a single Oracle Compute instance, pull down the application from the GitHub public repository, complete some initial setup, such as populating the .env file, and you will be in a position to get started. Then, run the existing docker-compose stack (PostgreSQL + HAPI FHIR + Keycloak) plus uvicorn (FastAPI) on the OCI VM exactly as you do locally.  
+
+Note that this application includes a Postgres-related shell script that is run automatically as part of the docker compose execution. Before beginning the Docker-related setup, be sure and update the shell script file permissions:
+
+```bash
+chmod +x scripts/init-db.sh
+```
 
 Once you identify your public-facing URL, you can access the app from this URL, as opposed to the local development environment _localhost_.
 
