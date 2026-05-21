@@ -14,7 +14,7 @@ def get_patient(ptid: str = None, name: str | None = None):
     headers = {"Accept": "application/fhir+json"}
 
     if settings.fhir_external_api_token:
-      headers["Authorization"] = f"Bearer {settings.fhir_external_api_token}" 
+      headers["Authorization"] = f"Bearer {settings.fhir_external_api_token}"
 
     if ptid == None:
         output = requests.get(f"{base_url}/Patient", headers=headers, params={"_count": 5})
