@@ -156,8 +156,7 @@ Work in this order. Each task produces a testable result before the next one beg
 
 ### Route ordering rule
 
-FastAPI registers routes in the order they are defined. Because `{ptid}` is a wildcard path segment, any route that shares the `/Patient/{ptid}/` prefix **must be defined before** the wildcard route. Your existing code already
-demonstrates this — `/view`, `/edit`, and `/delete-confirm` all appear above `GET /Patient/{ptid}`.
+FastAPI registers routes in the order they are defined. Because `{ptid}` is a wildcard path segment, any route that shares the `/Patient/` prefix with a literal segment **must be defined before** the wildcard route. Your existing code already demonstrates this — `/view`, `/edit`, and `/delete-confirm` all appear above `GET /Patient/{ptid}`.
 
 ```python
 # CORRECT — specific routes first
@@ -168,7 +167,7 @@ demonstrates this — `/view`, `/edit`, and `/delete-confirm` all appear above `
 @router.get("/Patient/{ptid}")            # <-- wildcard last
 ```
 
-If you place the activity route after the wildcard, FastAPI will match `/Patient/abc123/activity` as `ptid = "abc123/activity"` and the route will never fire.
+Note: FastAPI's `{ptid}` captures a single path segment and does not consume slashes, so `/Patient/{ptid}` would not accidentally swallow `/Patient/abc/activity` as a single ID. The real risk is simpler: a literal route like `GET /Patient/new` must appear before `GET /Patient/{ptid}`, or the string `"new"` will be captured as a patient ID and routed to the wrong handler. The same principle applies to `/activity` and all other named sub-routes.
 
 ### Endpoint pattern
 
@@ -227,7 +226,7 @@ def get_vitals(ptid: str) -> dict:
 |----------|---------------|-------------------|
 | `get_vitals(ptid)`      | `/Observation` | `patient={ptid}`, `category=vital-signs`, `_sort=-date` |
 | `get_conditions(ptid)`  | `/Condition`   | `patient={ptid}`, `_sort=-recorded-date` |
-| `get_medications(ptid)` | `/MedicationRequest`  | `patient={ptid}`, `_sort=-authored-on` |
+| `get_medications(ptid)` | `/MedicationRequest`  | `patient={ptid}`, `_sort=-authoredon` |
 | `get_allergies(ptid)`   | `/AllergyIntolerance` | `patient={ptid}` |
 | `get_procedures(ptid)`  | `/Procedure`   | `patient={ptid}`, `_sort=-date`, `_count=20` |
 
@@ -251,7 +250,26 @@ Consider wrapping each call in the router with a try/except so that one failed r
 try:
     vitals = patient_service.get_vitals(ptid)
 except Exception:
-    vitals = {"entry": []}
+    vitals = {"entry": [], "_error": True}
+```
+
+Passing `_error: True` in the fallback dict lets the template distinguish between a failed call and a genuine empty result — and show a different message to the user. These two states have different clinical meanings:
+
+- **"No vital signs on record"** — the FHIR server responded successfully with zero entries. The patient may genuinely have no vitals recorded.
+- **"Unable to load vital signs"** — the call failed. The data may exist but could not be retrieved. A clinician should not act on the assumption that the record is empty.
+
+In the template, check for the flag:
+
+```html
+{% if vitals.get("_error") %}
+  <p class="text-red-600 text-sm">Unable to load vital signs. Please try again.</p>
+{% else %}
+  {% for entry in vitals.get("entry", []) %}
+    ...
+  {% else %}
+    <p class="text-gray-500 text-sm">No vital signs on record.</p>
+  {% endfor %}
+{% endif %}
 ```
 
 ---
@@ -261,6 +279,8 @@ except Exception:
 ### Standalone vs. extending base.html
 
 `base.html` provides the left nav shell. The activity page does not want that, so do **not** use `{% extends "base.html" %}`. Instead write a complete HTML document from scratch.
+
+The tradeoff is that the `<head>` dependencies (Tailwind, HTMX, FontAwesome, favicon, `main.css`) are duplicated between `base.html` and the activity page. This is acceptable for a v1 learning implementation. A natural future refinement is a shared `clinical_base.html` that provides the `<head>` block and a minimal body wrapper, which both the activity page and any future full-page clinical views can extend.
 
 ```html
 <!DOCTYPE html>
@@ -277,6 +297,9 @@ except Exception:
 <body class="bg-gray-100 text-gray-900">
 
   <!-- Breadcrumb -->
+  <!-- href="/" returns to the app root, which loads the full shell with the left nav.
+       Do NOT use href="/Patient/table" — that route returns a partial HTML fragment,
+       not a full page, so navigating to it directly would render a bare table with no layout. -->
   <header class="bg-white border-b border-gray-300 px-8 py-3 flex items-center gap-2 text-sm text-gray-600">
     <a href="/" class="hover:text-blue-700">
       <i class="fa-regular fa-users"></i> Patients
@@ -573,6 +596,18 @@ LOINC is the standard coding system for clinical observations. If you want to fi
 </section>
 ```
 
+> **Future Refinement — Move FHIR parsing out of templates**
+>
+> The template snippets in this section put FHIR-specific extraction logic directly in Jinja2: checking for `valueQuantity` vs `component`, accessing `coding[0].display`, slicing date strings, and so on. This is fine for a first learning implementation and keeps the router and service simple.
+>
+> As the app matures, consider shaping the data in the service or router before it reaches the template. Instead of passing a raw FHIR Bundle, pass a list of pre-shaped display dicts:
+>
+> ```python
+> {"date": "2025-03-01", "label": "Blood Pressure", "value": "118/76", "unit": "mmHg"}
+> ```
+>
+> The template then only needs `{{ row.label }}` — it no longer needs to understand FHIR structure. This makes templates easier to read, easier to test, and easier to change when the FHIR data shape varies between servers.
+
 ### Conditions table snippet
 
 ```html
@@ -646,6 +681,18 @@ This lets you develop and debug the template completely independently of the act
 When calling the FHIR server from Python (server-to-server), CORS does not apply. CORS only restricts browser-to-server calls. Your service layer uses the `requests` library server-side, so CORS headers on HAPI are irrelevant for this architecture.
 
 The `fhir_external_api_token` from settings is only needed for the Medblocks-hosted external server — when running locally against Docker HAPI, that token is typically empty and the `if settings.fhir_external_api_token` guard correctly skips the Authorization header.
+
+### FHIR search: `patient=` vs. `subject=`
+
+The search params in Section 6 use `patient={ptid}` to scope results to a specific patient. This is the correct and most common form for HAPI FHIR and Synthea-generated data — `patient` is a convenience search parameter defined on most clinical resource types.
+
+If you encounter a resource type that returns unexpected or empty results despite the patient having data, try the alternative reference form:
+
+```
+subject=Patient/{ptid}
+```
+
+Some FHIR servers store the patient link as `subject.reference` (a full reference string like `"Patient/abc-123"`) rather than a plain ID, and the `subject=` parameter searches that field directly. For the resources in this guide (`Observation`, `Condition`, `MedicationRequest`, `AllergyIntolerance`), `patient={ptid}` is the right starting point. If you expand to resources like `Procedure` or `DiagnosticReport`, verify which parameter your server responds to.
 
 ### Dates from FHIR are ISO 8601 strings
 
