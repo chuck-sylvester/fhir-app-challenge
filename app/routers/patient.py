@@ -2,7 +2,7 @@
 # app/routers/patient.py
 # -----------------------------------------------------------
 
-from fastapi import APIRouter, Request, Form
+from fastapi import APIRouter, Request, Form, Query
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from datetime import date
@@ -84,13 +84,16 @@ def _patient_to_context(patient: dict) -> dict:
 # --- List / table routes ---
 
 @router.get("/Patient/table", response_class=HTMLResponse)
-async def get_patient_table(request: Request):
+async def get_patient_table(request: Request, name: str | None = Query(None)):
     """Get patients for display in HTML Table format"""
-    data = patient_service.get_patient("table")
+    data = patient_service.get_patient("table", name=name)
     return templates.TemplateResponse(
         request,
         "partials/get_patient_table.html",
-        {"results": data}
+        {
+            "results": data,
+            "name": name or "",
+        },
     )
 
 

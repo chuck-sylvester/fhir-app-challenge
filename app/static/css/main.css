@@ -1,0 +1,11 @@
+.search-wrapper {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem;
+}
+
+#search {
+    border: solid gray 1px;
+    border-radius: 4px;
+    padding: 4px 12px;
+}

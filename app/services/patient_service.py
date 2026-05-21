@@ -7,7 +7,7 @@ from app.config import settings
 import xml.etree.ElementTree as ET
 
 
-def get_patient(ptid: str = None):
+def get_patient(ptid: str = None, name: str | None = None):
     """Get patient resource data, based on query string and query parameters"""
     base_url = settings.fhir_base_url
 
@@ -19,7 +19,10 @@ def get_patient(ptid: str = None):
     if ptid == None:
         output = requests.get(f"{base_url}/Patient", headers=headers, params={"_count": 5})
     elif ptid == "table":
-        output = requests.get(f"{base_url}/Patient", headers=headers)
+        params = {}
+        if name:
+            params["name"] = name
+        output = requests.get(f"{base_url}/Patient", headers=headers, params=params)
     elif ptid == "xml":
         headers = {"Accept": "application/fhir+xml"}
         headers["Authorization"] = f"Bearer {settings.fhir_external_api_token}" 

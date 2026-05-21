@@ -1,6 +1,17 @@
 <div class="text-left">
-  <h3 class="font-mono text-sm p-2">Patient Search/Filter Goes HERE...</h3>
-  <hr class="p-2 border-gray-400">
+  <div class="search-wrapper">
+    <input
+      type="search"
+      name="name"
+      id="search"
+      value="{{ name or '' }}"
+      placeholder="Search by name..."
+      hx-get="/Patient/table"
+      hx-trigger="keyup changed delay:500ms, search"
+      hx-target="#result"
+      hx-swap="innerHTML"
+    />
+  </div>
   <table class="w-full text-sm text-left border border-gray-300 rounded">
     <thead class="bg-gray-50 text-gray-600">
       <tr>
@@ -65,7 +76,7 @@
       </tr>
       {% else %}
       <tr>
-        <td colspan="4" class="px-4 py-2 text-gray-500">No patients found.</td>
+        <td colspan="6" class="px-4 py-2 text-gray-500">No patients found.</td>
       </tr>
       {% endfor %}
     </tbody>
