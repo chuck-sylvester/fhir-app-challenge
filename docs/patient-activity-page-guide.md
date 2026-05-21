@@ -1,16 +1,16 @@
-# Patient Activity Page — Build Guide
+# Patient Activity Page — Implementation Guide
 
-This document covers how to build the patient activity (clinical detail) page for the FHIR App Challenge project. It is written as a learning reference, so each section explains not just *what* to do but *why* it works the way it does
-across FastAPI, Jinja2, HTMX, and the FHIR R4 specification.
+This guide walks through building the patient activity (clinical detail) page from start
+to finish. It is organized into phases and tasks so you can follow along sequentially,
+test after each phase, and understand not just *what* to build but *why* each piece is
+structured the way it is.
 
 ---
 
-## 1. Feature Overview
+## What We Are Building
 
-The patient activity page is a full, dedicated browser page scoped to a single patient. It replaces the current application shell (left nav + main content area) with a focused clinical view. The user reaches it by clicking the
-ellipsis action menu on any patient row and selecting "Activity."
-
-**What the page shows:**
+A full, dedicated browser page scoped to a single patient. The user reaches it by
+clicking the ellipsis action menu on any patient row and selecting **Activity**.
 
 | Section | FHIR Resource Type |
 |---------|--------------------|
@@ -19,19 +19,20 @@ ellipsis action menu on any patient row and selecting "Activity."
 | Conditions / Diagnoses  | `Condition` |
 | Medications             | `MedicationRequest` |
 | Allergies               | `AllergyIntolerance` |
-| Procedures *(optional)* | `Procedure` |
 
-**Design decisions already made:**
+**Design decisions:**
 
 - Dedicated page, not a modal — the volume of clinical data needs the full viewport.
 - No left nav — removes distraction; a breadcrumb handles navigation back.
-- Full browser navigation (`window.location.href`) — not an HTMX swap — because the page layout itself changes completely.
+- Full browser navigation (`window.location.href`) — not an HTMX swap — because the
+  page layout itself changes completely.
 
 ---
 
-## 2. Architecture Recap
+## Architecture at a Glance
 
-Understanding the request lifecycle is the foundation for building any new feature in this stack.
+Every new feature in this stack follows the same request lifecycle. Understanding it
+once makes every phase below predictable.
 
 ```
 Browser
@@ -59,19 +60,19 @@ Jinja2 Engine      renders patient_activity.html with context dict
 Browser            receives and displays the full HTML page
 ```
 
-### Key principle: separation of concerns
+**Separation of concerns:**
 
 | Layer | Responsibility | Should NOT |
 |-------|----------------|------------|
 | Router   | HTTP routing, assembling context, returning responses | Contain business logic or FHIR calls |
-| Service  | FHIR HTTP calls, data shaping | Know about HTTP requests/responses from the browser |
+| Service  | FHIR HTTP calls, data shaping | Know about HTTP requests from the browser |
 | Template | Rendering HTML from context variables | Contain logic beyond simple display conditionals |
 
 ---
 
-## 3. Screen Layout Concepts
+## Screen Layout Reference
 
-### Layout A — Stacked Sections (simplest to build first)
+### Layout A — Stacked Sections (build this first)
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
@@ -89,37 +90,23 @@ Browser            receives and displays the full HTML page
 │  │  Date        Measure          Value      Unit           │    │
 │  │  2025-03-01  Blood Pressure   118/76     mmHg           │    │
 │  │  2025-03-01  Heart Rate       72         /min           │    │
-│  │  2025-03-01  Body Weight      68.5       kg             │    │
 │  └─────────────────────────────────────────────────────────┘    │
 │                                                                 │
 │  CONDITIONS                                                     │
 │  ┌─────────────────────────────────────────────────────────┐    │
 │  │  Condition               Status     Onset               │    │
 │  │  Type 2 Diabetes         Active     2019-06             │    │
-│  │  Essential Hypertension  Active     2017-11             │    │
 │  └─────────────────────────────────────────────────────────┘    │
 │                                                                 │
-│  MEDICATIONS                                                    │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │  Medication         Status    Authored                  │    │
-│  │  Metformin 500 mg   Active    2019-07-15                │    │
-│  │  Lisinopril 10 mg   Active    2017-12-01                │    │
-│  └─────────────────────────────────────────────────────────┘    │
-│                                                                 │
-│  ALLERGIES                                                      │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │  Substance     Reaction       Severity                  │    │
-│  │  Penicillin    Rash           Moderate                  │    │
-│  └─────────────────────────────────────────────────────────┘    │
+│  MEDICATIONS / ALLERGIES (same pattern)                         │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Layout B — Tabbed Sections (progressive enhancement)
+### Layout B — Tabbed Sections (future enhancement)
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
 │ ← Patients                                    [App Title]       │
-│ Patients > Jane Smith                                           │
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌─────────────────────────────────────────────────────────┐    │
 │  │  Jane Smith    F  |  DOB: 1982-04-11  |  Age: 43        │    │
@@ -127,82 +114,130 @@ Browser            receives and displays the full HTML page
 │                                                                 │
 │  [ Vitals ] [ Conditions ] [ Medications ] [ Allergies ]        │
 │  ─────────                                                      │
-│                                                                 │
 │  ┌─────────────────────────────────────────────────────────┐    │
-│  │  (active tab content rendered here via HTMX)            │    │
+│  │  (active tab content rendered here via HTMX on click)   │    │
 │  └─────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-Layout A is recommended to start — all sections load at once, no additional HTMX complexity. Layout B is a natural evolution once Layout A is working.
+Build Layout A first — all sections load at once with no additional HTMX complexity.
+Layout B is a natural evolution once Layout A is working.
 
 ---
 
-## 4. Task Checklist
+## Phase Checklist
 
-Work in this order. Each task produces a testable result before the next one begins.
-
-- [ ] **Task 1** — Create `app/templates/patient_activity.html` (standalone, no left nav)
-- [ ] **Task 2** — Add service functions for each clinical FHIR resource type
-- [ ] **Task 3** — Add `GET /Patient/{ptid}/activity` route in `patient.py`
-- [ ] **Task 4** — Wire up the action menu in `main.js` to navigate to the activity page
-- [ ] **Task 5** — Fill in each template section with real FHIR data
-
-**Milestone after Task 3:** visit `http://localhost:8000/Patient/{any-real-id}/activity` directly in the browser — the page should load with demographics even before the action menu is wired up. This lets you develop the template independently.
+- [ ] **Phase 1** — Create the standalone page template
+- [ ] **Phase 2** — Add FHIR service functions
+- [ ] **Phase 3** — Add the router endpoint  ← *first testable milestone*
+- [ ] **Phase 4** — Wire up the action menu
+- [ ] **Phase 5** — Complete the clinical template sections  ← *done*
 
 ---
 
-## 5. FastAPI — Router & Endpoint
+---
 
-### Route ordering rule
+# Phase 1: Create the Standalone Page Template
 
-FastAPI registers routes in the order they are defined. Because `{ptid}` is a wildcard path segment, any route that shares the `/Patient/` prefix with a literal segment **must be defined before** the wildcard route. Your existing code already demonstrates this — `/view`, `/edit`, and `/delete-confirm` all appear above `GET /Patient/{ptid}`.
+**Goal:** Create `app/templates/patient_activity.html` with a full HTML skeleton —
+breadcrumb, demographics header, and placeholder comments for each clinical section.
+The page will not be reachable from the browser until Phase 3, but you can build and
+refine the template structure independently.
 
-```python
-# CORRECT — specific routes first
-@router.get("/Patient/{ptid}/activity")   # <-- new route here
-@router.get("/Patient/{ptid}/view")
-@router.get("/Patient/{ptid}/edit")
-@router.get("/Patient/{ptid}/delete-confirm")
-@router.get("/Patient/{ptid}")            # <-- wildcard last
+---
+
+## Task 1.1 — Create the template file
+
+Create a new file: **`app/templates/patient_activity.html`**
+
+This is a **standalone** template — do not use `{% extends "base.html" %}`. The activity
+page intentionally omits the left nav, so it manages its own complete HTML document.
+This means duplicating the `<head>` dependencies (Tailwind, HTMX, FontAwesome, main.css).
+That duplication is acceptable for this implementation. A natural future refinement is a
+shared `clinical_base.html` that both this page and any future full-page clinical views
+can extend.
+
+Add the following skeleton:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ first_name }} {{ last_name }} — Activity</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <link rel="stylesheet" href="https://kit.fontawesome.com/124182fb50.css">
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body class="bg-gray-100 text-gray-900">
+
+  <!-- Breadcrumb
+       href="/" returns to the app root, which loads the full shell with the left nav.
+       Do NOT use href="/Patient/table" — that route returns an HTML fragment, not a
+       full page. Navigating to it directly renders a bare table with no layout. -->
+  <header class="bg-white border-b border-gray-300 px-8 py-3 flex items-center gap-2 text-sm text-gray-600">
+    <a href="/" class="hover:text-blue-700">
+      <i class="fa-regular fa-users"></i> Patients
+    </a>
+    <span>/</span>
+    <span class="text-gray-900 font-medium">{{ first_name }} {{ last_name }}</span>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-8 py-6">
+
+    <!-- Task 1.2: Demographics header goes here -->
+
+    <!-- Phase 5: Clinical sections go here -->
+
+  </main>
+</body>
+</html>
 ```
 
-Note: FastAPI's `{ptid}` captures a single path segment and does not consume slashes, so `/Patient/{ptid}` would not accidentally swallow `/Patient/abc/activity` as a single ID. The real risk is simpler: a literal route like `GET /Patient/new` must appear before `GET /Patient/{ptid}`, or the string `"new"` will be captured as a patient ID and routed to the wrong handler. The same principle applies to `/activity` and all other named sub-routes.
+---
 
-### Endpoint pattern
+## Task 1.2 — Add the demographics header
 
-```python
-@router.get("/Patient/{ptid}/activity", response_class=HTMLResponse)
-async def get_patient_activity(request: Request, ptid: str):
-    patient  = patient_service.get_patient(ptid)
-    vitals   = patient_service.get_vitals(ptid)
-    conditions  = patient_service.get_conditions(ptid)
-    medications = patient_service.get_medications(ptid)
-    allergies   = patient_service.get_allergies(ptid)
+Replace the `<!-- Task 1.2 -->` comment with the following block inside `<main>`:
 
-    context = _patient_to_context(patient)
-    context["ptid"] = ptid
-    context["vitals"]      = vitals
-    context["conditions"]  = conditions
-    context["medications"] = medications
-    context["allergies"]   = allergies
-
-    return templates.TemplateResponse(request, "patient_activity.html", context)
+```html
+<div class="bg-white rounded-lg border border-gray-300 px-6 py-4 mb-6">
+  <h1 class="text-xl font-semibold text-gray-900">{{ first_name }} {{ last_name }}</h1>
+  <p class="text-sm text-gray-500 mt-1">
+    {{ gender | title if gender else "—" }}
+    &nbsp;|&nbsp;
+    DOB: {{ birth_date if birth_date else "—" }}
+    &nbsp;|&nbsp;
+    Age: {{ age if age else "—" }}
+    &nbsp;|&nbsp;
+    ID: {{ ptid }}
+  </p>
+</div>
 ```
 
-**Why all calls are made in the router, not in the template or service:**  
-The router is the orchestration layer. It knows which data the page needs. Each service function does one thing — the router composes them.
-
-**Why `response_class=HTMLResponse`:**  
-FastAPI defaults to JSON responses. Declaring `HTMLResponse` sets the `Content-Type: text/html` header and tells FastAPI not to serialize the return value as JSON.
+**Where do these variables come from?**
+The router (Phase 3) calls the existing `_patient_to_context(patient)` helper in
+`patient.py`. That function already extracts `first_name`, `last_name`, `gender`,
+`birth_date`, and `age` from a FHIR Patient resource. It is reused here — no new
+extraction logic needed. The `ptid` value is passed separately by the router.
 
 ---
 
-## 6. Service Layer — Fetching FHIR Clinical Data
+---
 
-### General pattern
+# Phase 2: Add FHIR Service Functions
 
-Every new service function follows the same shape:
+**Goal:** Add four new functions to **`app/services/patient_service.py`**, one per
+FHIR resource type. Each function follows the same pattern as the existing service
+functions: build headers, build params, make a GET request, return the JSON.
+
+Add these functions after the existing `get_patient()` function and before `_MARITAL_DISPLAY`.
+
+---
+
+## Task 2.1 — Add get_vitals()
 
 ```python
 def get_vitals(ptid: str) -> dict:
@@ -220,179 +255,564 @@ def get_vitals(ptid: str) -> dict:
     return output.json()
 ```
 
-### FHIR search parameters for each resource
+**FHIR notes:**
+- `category=vital-signs` filters to only vital sign observations, excluding lab results
+  and other observation types.
+- `_sort=-date` returns the most recent readings first (the `-` prefix means descending).
+- The FHIR `Observation` resource uses `effectiveDateTime` for the recorded date and
+  `valueQuantity` for single-value measurements (heart rate, weight, etc.). Blood pressure
+  is a special case — it uses a `component` array instead. See Appendix A for the full
+  resource structure.
 
-| Function | FHIR Endpoint | Key Search Params |
-|----------|---------------|-------------------|
-| `get_vitals(ptid)`      | `/Observation` | `patient={ptid}`, `category=vital-signs`, `_sort=-date` |
-| `get_conditions(ptid)`  | `/Condition`   | `patient={ptid}`, `_sort=-recorded-date` |
-| `get_medications(ptid)` | `/MedicationRequest`  | `patient={ptid}`, `_sort=-authoredon` |
-| `get_allergies(ptid)`   | `/AllergyIntolerance` | `patient={ptid}` |
-| `get_procedures(ptid)`  | `/Procedure`   | `patient={ptid}`, `_sort=-date`, `_count=20` |
+---
 
-### Why `_sort` matters
-
-FHIR servers return resources in an unspecified order by default. Sorting by `-date` (descending) puts the most recent records first, which is what a clinician expects. The `-` prefix means descending. Not all FHIR servers support all sort parameters — HAPI FHIR supports these for the resources above.
-
-### Why `_count` matters
-
-Without `_count`, HAPI FHIR returns its default page size (usually 20). For vitals this is fine. For conditions or medications on a long-term patient, you may want to increase it or implement pagination later. Start with `_count=20`
-and adjust.
-
-### Error handling
-
-`output.raise_for_status()` raises a `requests.HTTPError` if the FHIR server returns a 4xx or 5xx. For the activity page, a missing resource type (e.g., no allergy records) will return a valid FHIR Bundle with zero entries — not an
-error. Only unreachable server or auth failures produce HTTP errors.
-
-Consider wrapping each call in the router with a try/except so that one failed resource type does not break the entire page:
+## Task 2.2 — Add get_conditions()
 
 ```python
-try:
-    vitals = patient_service.get_vitals(ptid)
-except Exception:
-    vitals = {"entry": [], "_error": True}
+def get_conditions(ptid: str) -> dict:
+    headers = {"Accept": "application/fhir+json"}
+    if settings.fhir_external_api_token:
+        headers["Authorization"] = f"Bearer {settings.fhir_external_api_token}"
+    params = {
+        "patient": ptid,
+        "_sort": "-recorded-date",
+        "_count": 20,
+    }
+    output = requests.get(f"{settings.fhir_base_url}/Condition", headers=headers, params=params)
+    output.raise_for_status()
+    return output.json()
 ```
 
-Passing `_error: True` in the fallback dict lets the template distinguish between a failed call and a genuine empty result — and show a different message to the user. These two states have different clinical meanings:
+**FHIR notes:**
+- Each `Condition` has a `clinicalStatus` (active, resolved, etc.) and a `code` that
+  identifies the diagnosis. Use `code.text` first for display — it is the human-readable
+  label. Fall back to `code.coding[0].display` if `text` is absent.
+- The onset date may appear as `onsetDateTime` (a string) or `onsetPeriod.start`
+  (a period with start/end). Check for both in the template.
 
-- **"No vital signs on record"** — the FHIR server responded successfully with zero entries. The patient may genuinely have no vitals recorded.
-- **"Unable to load vital signs"** — the call failed. The data may exist but could not be retrieved. A clinician should not act on the assumption that the record is empty.
+---
 
-In the template, check for the flag:
+## Task 2.3 — Add get_medications()
+
+```python
+def get_medications(ptid: str) -> dict:
+    headers = {"Accept": "application/fhir+json"}
+    if settings.fhir_external_api_token:
+        headers["Authorization"] = f"Bearer {settings.fhir_external_api_token}"
+    params = {
+        "patient": ptid,
+        "_sort": "-authoredon",
+        "_count": 20,
+    }
+    output = requests.get(f"{settings.fhir_base_url}/MedicationRequest", headers=headers, params=params)
+    output.raise_for_status()
+    return output.json()
+```
+
+**FHIR notes:**
+- The sort key is `authoredon` (no hyphen) — this is the exact FHIR R4 search parameter
+  name for `MedicationRequest`. Using `authored-on` (with a hyphen) will be silently
+  ignored or cause an error depending on the HAPI version.
+- The medication name is in `medicationCodeableConcept.text` or
+  `medicationCodeableConcept.coding[0].display`.
+- Dosage instructions are in `dosageInstruction[0].text`.
+
+---
+
+## Task 2.4 — Add get_allergies()
+
+```python
+def get_allergies(ptid: str) -> dict:
+    headers = {"Accept": "application/fhir+json"}
+    if settings.fhir_external_api_token:
+        headers["Authorization"] = f"Bearer {settings.fhir_external_api_token}"
+    params = {
+        "patient": ptid,
+        "_count": 20,
+    }
+    output = requests.get(f"{settings.fhir_base_url}/AllergyIntolerance", headers=headers, params=params)
+    output.raise_for_status()
+    return output.json()
+```
+
+**FHIR notes:**
+- The allergen name is in `code.text` or `code.coding[0].display`.
+- Reaction details (substance, manifestation, severity) are in the `reaction` array.
+- `criticality` (`low`, `high`, `unable-to-assess`) and `clinicalStatus` are separate fields.
+
+---
+
+## A Note on `patient=` vs. `subject=`
+
+All four functions above use `patient={ptid}` to scope results to a specific patient.
+This is the correct and most common form for HAPI FHIR and Synthea-generated data.
+
+If a resource type returns empty or unexpected results despite the patient having data,
+try the alternative reference form: `subject=Patient/{ptid}`. Some FHIR servers store
+the patient link as a full reference string (`"Patient/abc-123"`) and the `subject=`
+parameter searches that field directly. For the four resources in this guide,
+`patient={ptid}` is the right starting point.
+
+---
+
+---
+
+# Phase 3: Add the Router Endpoint
+
+**Goal:** Register `GET /Patient/{ptid}/activity` in **`app/routers/patient.py`**,
+call all five service functions, and return the rendered template. After this phase
+you have a testable page.
+
+---
+
+## Task 3.1 — Insert the route in the correct position
+
+**Route ordering matters.** FastAPI registers routes in the order they are defined.
+A route like `GET /Patient/new` must appear before `GET /Patient/{ptid}`, or the
+string `"new"` is captured as a patient ID and routed to the wrong handler. The same
+principle applies to every named sub-route under `/Patient/`.
+
+Note: FastAPI's `{ptid}` captures only a single path segment and does not consume
+slashes, so `/Patient/{ptid}` cannot accidentally match `/Patient/abc/activity` as a
+single ID. The ordering concern is specifically about bare literal routes like
+`/Patient/new` that share the same prefix level as `{ptid}`.
+
+Place the new route in the **"Action-menu modal routes"** block, alongside `/view`,
+`/edit`, and `/delete-confirm` — all of which are already above the `/{ptid}` wildcard:
+
+```python
+# --- Action-menu modal routes (must be registered before /{ptid} wildcard) ---
+
+@router.get("/Patient/{ptid}/activity", response_class=HTMLResponse)  # <-- add here
+async def get_patient_activity(request: Request, ptid: str):
+    ...
+
+@router.get("/Patient/{ptid}/view", response_class=HTMLResponse)
+...
+```
+
+---
+
+## Task 3.2 — Write the endpoint handler
+
+Add the following function body. Each clinical service call is wrapped in its own
+`try/except` so that one failed FHIR call does not crash the entire page.
+
+```python
+@router.get("/Patient/{ptid}/activity", response_class=HTMLResponse)
+async def get_patient_activity(request: Request, ptid: str):
+    patient = patient_service.get_patient(ptid)
+    context = _patient_to_context(patient)
+    context["ptid"] = ptid
+
+    try:
+        context["vitals"] = patient_service.get_vitals(ptid)
+    except Exception:
+        context["vitals"] = {"entry": [], "_error": True}
+
+    try:
+        context["conditions"] = patient_service.get_conditions(ptid)
+    except Exception:
+        context["conditions"] = {"entry": [], "_error": True}
+
+    try:
+        context["medications"] = patient_service.get_medications(ptid)
+    except Exception:
+        context["medications"] = {"entry": [], "_error": True}
+
+    try:
+        context["allergies"] = patient_service.get_allergies(ptid)
+    except Exception:
+        context["allergies"] = {"entry": [], "_error": True}
+
+    return templates.TemplateResponse(request, "patient_activity.html", context)
+```
+
+**Why the `_error` flag?**
+An empty result (`{"entry": []}`) and a failed call both result in no rows being
+displayed — but they have different clinical meanings. "No conditions on record" means
+the patient genuinely has no recorded conditions. "Unable to load conditions" means the
+data may exist but could not be retrieved. A clinician should not draw clinical
+conclusions from an error state. The `_error` flag lets the template show the right
+message in each case (see Phase 5).
+
+---
+
+## ✓ Milestone: Test the Page in the Browser
+
+Before wiring up the action menu, test the page directly:
+
+1. Ensure your dev server is running: `uvicorn app.main:app --reload --port 8000`
+2. Find a real patient ID from your FHIR server (check the patient table in the app or
+   look at the URL when viewing a patient).
+3. Navigate directly to: `http://localhost:8000/Patient/{real-patient-id}/activity`
+
+**Expected result:** The page loads with the breadcrumb, the demographics header
+populated with the patient's name, DOB, and age, and placeholder comments where the
+clinical sections will go. Each section's context variable (`vitals`, `conditions`, etc.)
+is available in the template even if not yet rendered.
+
+If you see a 500 error, check the FastAPI console for the traceback — the most common
+cause at this stage is a route ordering issue or a template variable name mismatch.
+
+---
+
+---
+
+# Phase 4: Wire Up the Action Menu
+
+**Goal:** Replace the placeholder `alert()` in **`app/static/js/main.js`** with real
+navigation to the activity page.
+
+---
+
+## Task 4.1 — Add an activityPatient() function
+
+In `main.js`, add a new function alongside the existing `viewPatient()`, `editPatient()`,
+and `confirmDeletePatient()` functions:
+
+```javascript
+function activityPatient(ptid) {
+  closePatientMenu();
+  window.location.href = `/Patient/${ptid}/activity`;
+}
+```
+
+**Why `window.location.href` and not `htmx.ajax()`?**
+The existing modal actions (View, Edit, Delete) use `htmx.ajax()` because they load
+content into `#modal-root` without leaving the current page. The Activity page is
+different — it has a completely different layout (no left nav, its own breadcrumb).
+A full browser navigation is the right tool here. The browser back button will then
+return the user to the patient list naturally.
+
+---
+
+## Task 4.2 — Update the Activity button onclick
+
+In `main.js`, find the Activity button inside the `menu.innerHTML` template string in
+`patientAction()`. It currently shows:
+
+```javascript
+onclick="alert('Note: Patient Activity to be implemented in week 2.')"
+```
+
+Replace it with:
+
+```javascript
+onclick="activityPatient('${ptid}')"
+```
+
+The updated button block should look like:
+
+```javascript
+<button
+  class="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100"
+  onclick="activityPatient('${ptid}')"
+>
+  <i class="fa-regular fa-clock w-4"></i> Activity
+</button>
+```
+
+---
+
+---
+
+# Phase 5: Complete the Template Clinical Sections
+
+**Goal:** Replace the `<!-- Phase 5: Clinical sections go here -->` comment in
+`patient_activity.html` with working HTML tables for each FHIR resource type.
+
+**Error vs. empty state pattern** — use this structure for every section. The `_error`
+flag set by the router (Phase 3) distinguishes a failed FHIR call from a genuinely
+empty result:
 
 ```html
-{% if vitals.get("_error") %}
-  <p class="text-red-600 text-sm">Unable to load vital signs. Please try again.</p>
+{% if section_name.get("_error") %}
+  <p class="text-sm text-red-600">Unable to load [section]. Please try again.</p>
 {% else %}
-  {% for entry in vitals.get("entry", []) %}
-    ...
+  {% for entry in section_name.get("entry", []) %}
+    ... table rows ...
   {% else %}
-    <p class="text-gray-500 text-sm">No vital signs on record.</p>
+    <p class="text-sm text-gray-500">No [section] on record.</p>
   {% endfor %}
 {% endif %}
 ```
 
 ---
 
-## 7. Jinja2 — Standalone Page Template
+## Task 5.1 — Add the Vital Signs section
 
-### Standalone vs. extending base.html
-
-`base.html` provides the left nav shell. The activity page does not want that, so do **not** use `{% extends "base.html" %}`. Instead write a complete HTML document from scratch.
-
-The tradeoff is that the `<head>` dependencies (Tailwind, HTMX, FontAwesome, favicon, `main.css`) are duplicated between `base.html` and the activity page. This is acceptable for a v1 learning implementation. A natural future refinement is a shared `clinical_base.html` that provides the `<head>` block and a minimal body wrapper, which both the activity page and any future full-page clinical views can extend.
+Observations have two value shapes: single-value (`valueQuantity`) and multi-component
+(blood pressure uses `component`). The template handles both cases with an `if/elif`:
 
 ```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ first_name }} {{ last_name }} — Activity</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-  <link rel="stylesheet" href="https://kit.fontawesome.com/124182fb50.css">
-  <link rel="stylesheet" href="/static/css/main.css">
-</head>
-<body class="bg-gray-100 text-gray-900">
-
-  <!-- Breadcrumb -->
-  <!-- href="/" returns to the app root, which loads the full shell with the left nav.
-       Do NOT use href="/Patient/table" — that route returns a partial HTML fragment,
-       not a full page, so navigating to it directly would render a bare table with no layout. -->
-  <header class="bg-white border-b border-gray-300 px-8 py-3 flex items-center gap-2 text-sm text-gray-600">
-    <a href="/" class="hover:text-blue-700">
-      <i class="fa-regular fa-users"></i> Patients
-    </a>
-    <span>/</span>
-    <span class="text-gray-900 font-medium">{{ first_name }} {{ last_name }}</span>
-  </header>
-
-  <main class="max-w-5xl mx-auto px-8 py-6">
-
-    <!-- Demographics Header -->
-    <!-- Clinical Sections -->
-
-  </main>
-</body>
-</html>
+<section class="mb-8">
+  <h2 class="text-base font-semibold text-gray-700 mb-2">
+    <i class="fa-regular fa-heart-pulse"></i>&nbsp; Vital Signs
+  </h2>
+  <table class="w-full text-sm border border-gray-300 rounded bg-white">
+    <thead class="bg-gray-50 text-gray-600">
+      <tr>
+        <th class="px-4 py-2 border-b text-left">Date</th>
+        <th class="px-4 py-2 border-b text-left">Observation</th>
+        <th class="px-4 py-2 border-b text-left">Value</th>
+        <th class="px-4 py-2 border-b text-left">Unit</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if vitals.get("_error") %}
+      <tr>
+        <td colspan="4" class="px-4 py-2 text-red-600">Unable to load vital signs. Please try again.</td>
+      </tr>
+      {% else %}
+      {% for entry in vitals.get("entry", []) %}
+      {% set obs = entry.resource %}
+      <tr class="border-b border-gray-200 hover:bg-yellow-50">
+        <td class="px-4 py-2">{{ obs.effectiveDateTime[:10] if obs.effectiveDateTime else "—" }}</td>
+        <td class="px-4 py-2">{{ obs.code.coding[0].display if obs.code.coding else "—" }}</td>
+        <td class="px-4 py-2">
+          {% if obs.valueQuantity is defined %}
+            {{ obs.valueQuantity.value }}
+          {% elif obs.component is defined %}
+            {{ obs.component[0].valueQuantity.value }}/{{ obs.component[1].valueQuantity.value }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td class="px-4 py-2">
+          {% if obs.valueQuantity is defined %}
+            {{ obs.valueQuantity.unit }}
+          {% elif obs.component is defined %}
+            mmHg
+          {% else %}
+            —
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="4" class="px-4 py-2 text-gray-500">No vital signs on record.</td>
+      </tr>
+      {% endfor %}
+      {% endif %}
+    </tbody>
+  </table>
+</section>
 ```
-
-### Accessing context variables in the template
-
-Whatever keys you pass in the context dict from the router become variables in the template. If the router passes `context["vitals"] = {...}`, then in the template you write `{{ vitals }}` or iterate with `{% for entry in vitals.get("entry", []) %}`.
-
-### The for/else pattern
-
-Jinja2's `{% for %}` block supports an `{% else %}` clause that renders when the iterable is empty. Always use it for FHIR result sets:
-
-```html
-{% for entry in conditions.get("entry", []) %}
-  <tr>
-    <td>{{ entry.resource.code.coding[0].display if entry.resource.code.coding else "—" }}</td>
-  </tr>
-{% else %}
-  <tr>
-    <td colspan="3" class="text-gray-500 px-4 py-2">No conditions on record.</td>
-  </tr>
-{% endfor %}
-```
-
-### Safe nested access
-
-FHIR resources are deeply nested. A field may be absent entirely. Use Jinja2's
-`if` and the `default` filter defensively:
-
-```html
-{{ entry.resource.valueQuantity.value | default("—") }}
-{{ entry.resource.code.coding[0].display if entry.resource.code.coding else "—" }}
-```
-
-Do not assume any field is always present, even ones that seem required by the spec — real-world FHIR data is often incomplete.
 
 ---
 
-## 8. HTMX — Navigation vs. Dynamic Swaps
+## Task 5.2 — Add the Conditions section
 
-### When to use full browser navigation
-
-The activity page uses a full page load, not an HTMX swap. Use `window.location.href` when:
-
-- The target page has a **different layout** (no left nav in this case)
-- The target page has its own URL that should appear in the browser address bar
-- The user should be able to use the browser back button to return
-
-```javascript
-// In main.js, inside patientAction() for the "Activity" option:
-window.location.href = `/Patient/${ptid}/activity`;
+```html
+<section class="mb-8">
+  <h2 class="text-base font-semibold text-gray-700 mb-2">
+    <i class="fa-regular fa-stethoscope"></i>&nbsp; Conditions
+  </h2>
+  <table class="w-full text-sm border border-gray-300 rounded bg-white">
+    <thead class="bg-gray-50 text-gray-600">
+      <tr>
+        <th class="px-4 py-2 border-b text-left">Condition</th>
+        <th class="px-4 py-2 border-b text-left">Status</th>
+        <th class="px-4 py-2 border-b text-left">Onset</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if conditions.get("_error") %}
+      <tr>
+        <td colspan="3" class="px-4 py-2 text-red-600">Unable to load conditions. Please try again.</td>
+      </tr>
+      {% else %}
+      {% for entry in conditions.get("entry", []) %}
+      {% set cond = entry.resource %}
+      <tr class="border-b border-gray-200 hover:bg-yellow-50">
+        <td class="px-4 py-2">
+          {{ cond.code.text if cond.code.text else
+             (cond.code.coding[0].display if cond.code.coding else "—") }}
+        </td>
+        <td class="px-4 py-2">
+          {{ cond.clinicalStatus.coding[0].code | title
+             if cond.clinicalStatus and cond.clinicalStatus.coding else "—" }}
+        </td>
+        <td class="px-4 py-2">
+          {% if cond.onsetDateTime is defined %}
+            {{ cond.onsetDateTime[:10] }}
+          {% elif cond.onsetPeriod is defined %}
+            {{ cond.onsetPeriod.start[:10] }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="3" class="px-4 py-2 text-gray-500">No conditions on record.</td>
+      </tr>
+      {% endfor %}
+      {% endif %}
+    </tbody>
+  </table>
+</section>
 ```
-
-### When to use HTMX swaps
-
-HTMX is the right tool when you want to **replace part of the current page** without a full reload. Your existing modals (view, edit, delete) work this way: the modal content is fetched and injected into `#modal-root`, leaving the rest of the page untouched.
-
-Inside the activity page itself, you may later use HTMX for tab switching (Layout B): clicking a tab fetches only the content for that tab and swaps it into the content area, avoiding a full page reload.
-
-### HTMX attribute quick reference
-
-| Attribute | Purpose |
-|-----------|---------|
-| `hx-get="/some/url"`      | Fetch URL on trigger event |
-| `hx-trigger="click"`      | What user action fires the request |
-| `hx-target="#element-id"` | Which element in the DOM to update |
-| `hx-swap="innerHTML"`     | Replace the target's inner content |
-| `hx-swap="outerHTML"`     | Replace the target element itself |
-| `hx-select="#element-id"` | Extract a subset of the response to swap |
-| `hx-push-url="true"`      | Update the browser address bar URL |
-| `hx-indicator="#spinner"` | Show/hide a loading indicator |
 
 ---
 
-## 9. FHIR Resources Reference
+## Task 5.3 — Add the Medications section
+
+```html
+<section class="mb-8">
+  <h2 class="text-base font-semibold text-gray-700 mb-2">
+    <i class="fa-regular fa-pills"></i>&nbsp; Medications
+  </h2>
+  <table class="w-full text-sm border border-gray-300 rounded bg-white">
+    <thead class="bg-gray-50 text-gray-600">
+      <tr>
+        <th class="px-4 py-2 border-b text-left">Medication</th>
+        <th class="px-4 py-2 border-b text-left">Status</th>
+        <th class="px-4 py-2 border-b text-left">Authored</th>
+        <th class="px-4 py-2 border-b text-left">Instructions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if medications.get("_error") %}
+      <tr>
+        <td colspan="4" class="px-4 py-2 text-red-600">Unable to load medications. Please try again.</td>
+      </tr>
+      {% else %}
+      {% for entry in medications.get("entry", []) %}
+      {% set med = entry.resource %}
+      <tr class="border-b border-gray-200 hover:bg-yellow-50">
+        <td class="px-4 py-2">
+          {% if med.medicationCodeableConcept is defined %}
+            {{ med.medicationCodeableConcept.text if med.medicationCodeableConcept.text else
+               (med.medicationCodeableConcept.coding[0].display
+                if med.medicationCodeableConcept.coding else "—") }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td class="px-4 py-2">{{ med.status | title if med.status else "—" }}</td>
+        <td class="px-4 py-2">{{ med.authoredOn[:10] if med.authoredOn is defined else "—" }}</td>
+        <td class="px-4 py-2">
+          {{ med.dosageInstruction[0].text
+             if med.dosageInstruction is defined and med.dosageInstruction else "—" }}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="4" class="px-4 py-2 text-gray-500">No medications on record.</td>
+      </tr>
+      {% endfor %}
+      {% endif %}
+    </tbody>
+  </table>
+</section>
+```
+
+---
+
+## Task 5.4 — Add the Allergies section
+
+```html
+<section class="mb-8">
+  <h2 class="text-base font-semibold text-gray-700 mb-2">
+    <i class="fa-regular fa-triangle-exclamation"></i>&nbsp; Allergies
+  </h2>
+  <table class="w-full text-sm border border-gray-300 rounded bg-white">
+    <thead class="bg-gray-50 text-gray-600">
+      <tr>
+        <th class="px-4 py-2 border-b text-left">Substance</th>
+        <th class="px-4 py-2 border-b text-left">Status</th>
+        <th class="px-4 py-2 border-b text-left">Criticality</th>
+        <th class="px-4 py-2 border-b text-left">Reaction</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if allergies.get("_error") %}
+      <tr>
+        <td colspan="4" class="px-4 py-2 text-red-600">Unable to load allergies. Please try again.</td>
+      </tr>
+      {% else %}
+      {% for entry in allergies.get("entry", []) %}
+      {% set allergy = entry.resource %}
+      <tr class="border-b border-gray-200 hover:bg-yellow-50">
+        <td class="px-4 py-2">
+          {{ allergy.code.text if allergy.code.text else
+             (allergy.code.coding[0].display if allergy.code.coding else "—") }}
+        </td>
+        <td class="px-4 py-2">
+          {{ allergy.clinicalStatus.coding[0].code | title
+             if allergy.clinicalStatus and allergy.clinicalStatus.coding else "—" }}
+        </td>
+        <td class="px-4 py-2">{{ allergy.criticality | title if allergy.criticality else "—" }}</td>
+        <td class="px-4 py-2">
+          {% if allergy.reaction is defined and allergy.reaction %}
+            {{ allergy.reaction[0].manifestation[0].text
+               if allergy.reaction[0].manifestation else "—" }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="4" class="px-4 py-2 text-gray-500">No allergies on record.</td>
+      </tr>
+      {% endfor %}
+      {% endif %}
+    </tbody>
+  </table>
+</section>
+```
+
+---
+
+## ✓ Final End-to-End Test
+
+1. Start the app and navigate to the patient list.
+2. Click the ellipsis on any patient row.
+3. Select **Activity** from the menu.
+4. Verify the activity page loads with:
+   - The patient's name in the breadcrumb and demographics header
+   - Correct DOB and calculated age
+   - Vital signs, conditions, medications, and allergies populated from the FHIR server
+   - "No [x] on record." for any sections with no data
+5. Click **← Patients** in the breadcrumb and verify you return to the main app shell.
+6. Verify the browser back button also returns you to the patient list.
+
+---
+
+> **Future Refinement — Move FHIR parsing out of templates**
+>
+> The template sections above put FHIR-specific extraction logic directly in Jinja2:
+> checking for `valueQuantity` vs `component`, accessing `coding[0].display`, slicing
+> date strings, and so on. This is appropriate for a first implementation and keeps the
+> router and service simple.
+>
+> As the app matures, consider shaping data in the service or router before it reaches
+> the template. Instead of passing raw FHIR Bundles, pass lists of pre-shaped dicts:
+>
+> ```python
+> {"date": "2025-03-01", "label": "Blood Pressure", "value": "118/76", "unit": "mmHg"}
+> ```
+>
+> The template then only needs `{{ row.label }}` — it no longer needs to understand FHIR
+> structure. This makes templates easier to read, easier to test, and more resilient when
+> FHIR data shapes vary between servers.
+
+---
+
+---
+
+# Appendix A: FHIR Resource Structures
+
+These JSON examples show the shape of each FHIR resource as returned by HAPI FHIR /
+Synthea. Use these as a reference when building templates or debugging unexpected output.
 
 ### What is a FHIR Bundle?
 
-When you search for resources (e.g., `GET /Observation?patient=123`), the FHIR server returns a **Bundle** — a wrapper object that contains zero or more matching resources. Every FHIR search result has this shape:
+All FHIR search results are wrapped in a Bundle. The actual resource data is always
+one level deep inside `entry[n].resource`:
 
 ```json
 {
@@ -404,16 +824,19 @@ When you search for resources (e.g., `GET /Observation?patient=123`), the FHIR s
       "fullUrl": "http://localhost:8080/fhir/Observation/456",
       "resource": {
         "resourceType": "Observation",
-        ...
+        "..."  : "..."
       }
     }
   ]
 }
 ```
 
-In your templates, `results.get("entry", [])` iterates over the `entry` array. The actual resource data is always one level deeper: `entry.resource`.
+In templates: `{% for entry in vitals.get("entry", []) %}` → `entry.resource` is the
+observation.
 
-### Patient resource (demographics)
+---
+
+### Patient (demographics)
 
 ```json
 {
@@ -433,15 +856,15 @@ In your templates, `results.get("entry", [])` iterates over the `entry` array. T
 }
 ```
 
-### Observation resource (vital signs)
+---
+
+### Observation (vital signs — single value)
 
 ```json
 {
   "resourceType": "Observation",
   "status": "final",
-  "category": [
-    { "coding": [{ "code": "vital-signs" }] }
-  ],
+  "category": [{ "coding": [{ "code": "vital-signs" }] }],
   "code": {
     "coding": [{ "system": "http://loinc.org", "code": "8867-4", "display": "Heart rate" }]
   },
@@ -450,30 +873,39 @@ In your templates, `results.get("entry", [])` iterates over the `entry` array. T
 }
 ```
 
-Blood pressure is a special case — it uses `component` instead of `valueQuantity`:
+### Observation (blood pressure — component array)
+
+Blood pressure is the main exception to the single-value pattern. It uses `component`
+instead of `valueQuantity`:
 
 ```json
 {
-  "code": { "coding": [{ "display": "Blood pressure panel" }] },
+  "code": { "coding": [{ "code": "55284-4", "display": "Blood pressure panel" }] },
+  "effectiveDateTime": "2025-03-01T09:15:00Z",
   "component": [
-    { "code": { "coding": [{ "display": "Systolic" }] }, "valueQuantity": { "value": 118, "unit": "mmHg" } },
-    { "code": { "coding": [{ "display": "Diastolic" }] }, "valueQuantity": { "value": 76, "unit": "mmHg" } }
+    {
+      "code": { "coding": [{ "code": "8480-6", "display": "Systolic" }] },
+      "valueQuantity": { "value": 118, "unit": "mmHg" }
+    },
+    {
+      "code": { "coding": [{ "code": "8462-4", "display": "Diastolic" }] },
+      "valueQuantity": { "value": 76, "unit": "mmHg" }
+    }
   ]
 }
 ```
 
-In your template, check for `entry.resource.component` to handle blood pressure separately from single-value observations.
+---
 
-### Condition resource
+### Condition
 
 ```json
 {
   "resourceType": "Condition",
-  "clinicalStatus": {
-    "coding": [{ "code": "active" }]
-  },
+  "clinicalStatus": { "coding": [{ "code": "active" }] },
   "code": {
-    "coding": [{ "system": "http://snomed.info/sct", "code": "73211009", "display": "Diabetes mellitus type 2" }],
+    "coding": [{ "system": "http://snomed.info/sct", "code": "73211009",
+                 "display": "Diabetes mellitus type 2" }],
     "text": "Type 2 Diabetes"
   },
   "onsetDateTime": "2019-06-15",
@@ -481,9 +913,12 @@ In your template, check for `entry.resource.component` to handle blood pressure 
 }
 ```
 
-Use `code.text` first for display — it is the human-readable label. Fall back to `code.coding[0].display` if `text` is absent.
+Use `code.text` first — it is the human-readable label. Fall back to
+`code.coding[0].display` if absent.
 
-### MedicationRequest resource
+---
+
+### MedicationRequest
 
 ```json
 {
@@ -500,7 +935,9 @@ Use `code.text` first for display — it is the human-readable label. Fall back 
 }
 ```
 
-### AllergyIntolerance resource
+---
+
+### AllergyIntolerance
 
 ```json
 {
@@ -517,18 +954,21 @@ Use `code.text` first for display — it is the human-readable label. Fall back 
 }
 ```
 
-### LOINC codes for common vital signs
+---
 
-LOINC is the standard coding system for clinical observations. If you want to filter or label vitals by type, these are the codes HAPI/Synthea typically uses:
+### LOINC Codes for Common Vital Signs
+
+LOINC is the standard coding system for clinical observations. These are the codes
+HAPI FHIR / Synthea typically uses:
 
 | LOINC Code | Observation |
 |------------|-------------|
 | `8867-4`   | Heart rate |
 | `9279-1`   | Respiratory rate |
 | `8310-5`   | Body temperature |
-| `8480-6`   | Systolic blood pressure |
-| `8462-4`   | Diastolic blood pressure |
-| `55284-4`  | Blood pressure panel (parent) |
+| `55284-4`  | Blood pressure panel (parent — has `component` children) |
+| `8480-6`   | Systolic blood pressure (component) |
+| `8462-4`   | Diastolic blood pressure (component) |
 | `29463-7`  | Body weight |
 | `8302-2`   | Body height |
 | `39156-5`  | BMI |
@@ -536,168 +976,99 @@ LOINC is the standard coding system for clinical observations. If you want to fi
 
 ---
 
-## 10. Rendering FHIR Data in Templates
+---
 
-### Demographics header snippet
+# Appendix B: Jinja2 Quick Reference
 
-```html
-<div class="bg-white rounded-lg border border-gray-300 px-6 py-4 mb-6 flex items-center gap-6">
-  <div>
-    <h1 class="text-xl font-semibold">{{ first_name }} {{ last_name }}</h1>
-    <p class="text-sm text-gray-500">
-      {{ gender | title if gender else "—" }}
-      &nbsp;|&nbsp;
-      DOB: {{ birth_date if birth_date else "—" }}
-      &nbsp;|&nbsp;
-      Age: {{ age if age else "—" }}
-    </p>
-  </div>
-</div>
-```
+### Context variables
 
-### Vital signs table snippet
+Whatever keys you pass in the router's context dict become variables in the template.
+`context["vitals"] = {...}` → `{{ vitals }}` in the template.
+
+### for / else
+
+Jinja2's `{% for %}` block supports an `{% else %}` clause that renders when the
+iterable is empty — always use it for FHIR result sets:
 
 ```html
-<section class="mb-8">
-  <h2 class="text-base font-semibold text-gray-700 mb-2">Vital Signs</h2>
-  <table class="w-full text-sm border border-gray-300 rounded">
-    <thead class="bg-gray-50 text-gray-600">
-      <tr>
-        <th class="px-4 py-2 border-b text-left">Date</th>
-        <th class="px-4 py-2 border-b text-left">Observation</th>
-        <th class="px-4 py-2 border-b text-left">Value</th>
-        <th class="px-4 py-2 border-b text-left">Unit</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for entry in vitals.get("entry", []) %}
-      {% set obs = entry.resource %}
-      <tr class="border-b border-gray-200 hover:bg-yellow-50">
-        <td class="px-4 py-2">{{ obs.effectiveDateTime[:10] if obs.effectiveDateTime else "—" }}</td>
-        <td class="px-4 py-2">{{ obs.code.coding[0].display if obs.code.coding else "—" }}</td>
-        <td class="px-4 py-2">
-          {% if obs.valueQuantity is defined %}
-            {{ obs.valueQuantity.value }}
-          {% elif obs.component is defined %}
-            {{ obs.component[0].valueQuantity.value }}/{{ obs.component[1].valueQuantity.value }}
-          {% else %}
-            —
-          {% endif %}
-        </td>
-        <td class="px-4 py-2">{{ obs.valueQuantity.unit if obs.valueQuantity is defined else "mmHg" }}</td>
-      </tr>
-      {% else %}
-      <tr>
-        <td colspan="4" class="px-4 py-2 text-gray-500">No vital signs on record.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</section>
+{% for entry in conditions.get("entry", []) %}
+  <tr>...</tr>
+{% else %}
+  <tr><td>No conditions on record.</td></tr>
+{% endfor %}
 ```
 
-> **Future Refinement — Move FHIR parsing out of templates**
->
-> The template snippets in this section put FHIR-specific extraction logic directly in Jinja2: checking for `valueQuantity` vs `component`, accessing `coding[0].display`, slicing date strings, and so on. This is fine for a first learning implementation and keeps the router and service simple.
->
-> As the app matures, consider shaping the data in the service or router before it reaches the template. Instead of passing a raw FHIR Bundle, pass a list of pre-shaped display dicts:
->
-> ```python
-> {"date": "2025-03-01", "label": "Blood Pressure", "value": "118/76", "unit": "mmHg"}
-> ```
->
-> The template then only needs `{{ row.label }}` — it no longer needs to understand FHIR structure. This makes templates easier to read, easier to test, and easier to change when the FHIR data shape varies between servers.
+### Safe nested access
 
-### Conditions table snippet
+FHIR resources are deeply nested and many fields are optional. Use defensive access:
 
 ```html
-<section class="mb-8">
-  <h2 class="text-base font-semibold text-gray-700 mb-2">Conditions</h2>
-  <table class="w-full text-sm border border-gray-300 rounded">
-    <thead class="bg-gray-50 text-gray-600">
-      <tr>
-        <th class="px-4 py-2 border-b text-left">Condition</th>
-        <th class="px-4 py-2 border-b text-left">Status</th>
-        <th class="px-4 py-2 border-b text-left">Onset</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for entry in conditions.get("entry", []) %}
-      {% set cond = entry.resource %}
-      <tr class="border-b border-gray-200 hover:bg-yellow-50">
-        <td class="px-4 py-2">
-          {{ cond.code.text if cond.code.text else
-             (cond.code.coding[0].display if cond.code.coding else "—") }}
-        </td>
-        <td class="px-4 py-2">
-          {{ cond.clinicalStatus.coding[0].code | title
-             if cond.clinicalStatus and cond.clinicalStatus.coding else "—" }}
-        </td>
-        <td class="px-4 py-2">
-          {{ cond.onsetDateTime[:10] if cond.onsetDateTime is defined else
-             (cond.onsetPeriod.start[:10] if cond.onsetPeriod is defined else "—") }}
-        </td>
-      </tr>
-      {% else %}
-      <tr>
-        <td colspan="3" class="px-4 py-2 text-gray-500">No conditions on record.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</section>
+{{ entry.resource.valueQuantity.value | default("—") }}
+{{ entry.resource.code.coding[0].display if entry.resource.code.coding else "—" }}
 ```
+
+### `is defined` vs. truthiness
+
+- `{% if x %}` — falsy for `None`, `""`, `0`, `[]`, `{}`
+- `{% if x is defined %}` — falsy only when the variable does not exist at all in context
+
+For FHIR dict keys accessed via dot notation in Jinja2, prefer `if x is defined` when
+checking for the presence of an optional field.
+
+### The `| title` filter
+
+Jinja2's built-in `| title` filter title-cases a string. `"active" | title` → `"Active"`.
+Useful for FHIR status codes, which are always lowercase in the spec.
+
+### Dates
+
+FHIR `dateTime` values look like `"2025-03-01T09:15:00Z"`. Slice the first 10 characters
+to get a display-friendly date: `obs.effectiveDateTime[:10]` → `"2025-03-01"`.
 
 ---
 
-## 11. Common Pitfalls & Tips
+---
+
+# Appendix C: Common Pitfalls & Tips
 
 ### FHIR data is always optional
 
-The FHIR spec marks many fields as optional (cardinality `0..1` or `0..*`). Even fields that seem logically required — like a patient's name or a condition's onset date — may be absent in real data. Always use defensive access in templates (`if x is defined`, `| default("—")`, `x if x else "—"`).
+The FHIR spec marks many fields as optional (cardinality `0..1` or `0..*`). Even fields
+that seem logically required — like a patient's name or a condition's onset date — may be
+absent in real data. Build templates defensively from the start.
 
 ### Synthea-generated data vs. real data
 
-If your HAPI server is loaded with Synthea-generated synthetic patients, the data is usually well-formed and complete. When you eventually connect to a real clinical FHIR server, expect gaps, nulls, and unexpected field combinations.
-Building defensively from the start pays off later.
-
-### `is defined` vs. checking for truthiness in Jinja2
-
-In Jinja2, `{% if x %}` is falsy for `None`, `""`, `0`, `[]`, and `{}`. `{% if x is defined %}` is only falsy when the variable doesn't exist at all in the context. For FHIR dict keys, `entry.resource.valueQuantity` will raise a Jinja2 error if accessed on a resource that doesn't have it — use `entry.resource.get("valueQuantity")` in a filter or test for it with `if "valueQuantity" in entry.resource`.
+HAPI FHIR loaded with Synthea patients usually has well-formed, complete data. When you
+connect to a real clinical FHIR server, expect gaps, nulls, and unexpected field
+combinations. Defensive Jinja2 access pays off later.
 
 ### The `_patient_to_context()` helper already exists
 
-The router already has `_patient_to_context(patient)` which extracts `first_name`, `last_name`, `gender`, `birth_date`, `age`, `phone`, `marital_status`, and `last_updated` from a Patient dict. Reuse it for the activity page demographics header — no need to duplicate that logic.
+`patient.py` already has `_patient_to_context(patient)` which extracts `first_name`,
+`last_name`, `gender`, `birth_date`, `age`, `phone`, `marital_status`, and `last_updated`
+from a FHIR Patient dict. Reuse it in the activity page router — no new extraction logic
+is needed for the demographics header.
 
 ### Test routes directly before wiring the UI
 
-After adding a new route, visit it directly in the browser:  
+After Phase 3, visit the page directly in the browser with a real patient ID:
 `http://localhost:8000/Patient/{real-patient-id}/activity`
 
-This lets you develop and debug the template completely independently of the action menu wiring. Add a hardcoded patient ID to the URL if needed.
+This lets you develop and debug the template completely independently of the action menu.
+Find a real ID by checking the patient table URL or viewing a patient's JSON output.
 
 ### FHIR server CORS and auth
 
-When calling the FHIR server from Python (server-to-server), CORS does not apply. CORS only restricts browser-to-server calls. Your service layer uses the `requests` library server-side, so CORS headers on HAPI are irrelevant for this architecture.
+CORS only restricts browser-to-server calls. Your service layer uses the `requests`
+library server-to-server, so CORS headers on HAPI are irrelevant for this architecture.
 
-The `fhir_external_api_token` from settings is only needed for the Medblocks-hosted external server — when running locally against Docker HAPI, that token is typically empty and the `if settings.fhir_external_api_token` guard correctly skips the Authorization header.
+The `fhir_external_api_token` is only needed for the Medblocks-hosted external server.
+When running locally against Docker HAPI, the token is empty and the
+`if settings.fhir_external_api_token` guard correctly skips the Authorization header.
 
-### FHIR search: `patient=` vs. `subject=`
+### `authoredon` — no hyphen
 
-The search params in Section 6 use `patient={ptid}` to scope results to a specific patient. This is the correct and most common form for HAPI FHIR and Synthea-generated data — `patient` is a convenience search parameter defined on most clinical resource types.
-
-If you encounter a resource type that returns unexpected or empty results despite the patient having data, try the alternative reference form:
-
-```
-subject=Patient/{ptid}
-```
-
-Some FHIR servers store the patient link as `subject.reference` (a full reference string like `"Patient/abc-123"`) rather than a plain ID, and the `subject=` parameter searches that field directly. For the resources in this guide (`Observation`, `Condition`, `MedicationRequest`, `AllergyIntolerance`), `patient={ptid}` is the right starting point. If you expand to resources like `Procedure` or `DiagnosticReport`, verify which parameter your server responds to.
-
-### Dates from FHIR are ISO 8601 strings
-
-FHIR `dateTime` values look like `"2025-03-01T09:15:00Z"` or `"2025-03-01"`. Slice the first 10 characters to get a display-friendly date: `obs.effectiveDateTime[:10]`. The `age` Jinja2 filter you already have in the router handles full date-to-age conversion.
-
-### The `title` Jinja2 filter
-
-Jinja2 has a built-in `| title` filter that title-cases a string. `"active" | title` produces `"Active"`. Useful for FHIR status codes which are always lowercase in the spec.
+The FHIR R4 search parameter for `MedicationRequest` authored date is `authoredon`
+(no hyphen). Using `authored-on` will be silently ignored or return an error depending
+on the HAPI server version. This is a known gotcha that does not produce an obvious error.
