@@ -1,0 +1,258 @@
+<div class="bg-gray-100 text-gray-900">
+  <!-- Breadcrumb
+       Uses HTMX to swap the patient table back into #result (same as the left-nav link),
+       keeping the full app shell and all CSS in place. The href is a non-JS fallback only;
+       HTMX intercepts the click and performs the partial swap instead of navigating. -->
+  <header class="py-2 flex items-center gap-2 text-med text-blue-600">
+    <a
+      href="/Patient/table"
+      hx-get="/Patient/table"
+      hx-target="#result"
+      hx-swap="innerHTML"
+      class="hover:text-blue-900"
+    >
+      <i class="fa-regular fa-users"></i>&nbsp;Patients
+    </a>
+    <span>/</span>
+    <span class="text-gray-900 font-medium">Activity</span>
+  </header>
+</div>
+
+<main class="py-4">
+
+  <!-- Patient Demographics Header -->
+  <div class="bg-white rounded-sm border border-gray-300 px-6 pt-2 mb-6">
+    <h1 class="text-xl font-semibold text-gray-900 pt-2">{{ first_name }} {{ last_name }}</h1>
+    <div class="patient-demographics">
+      <div class="demographics-box">
+        <span class="text-sm">Gender</span><br>
+        <span class="text-sm font-semibold">{{ gender | title if gender else "-" }}</span>
+      </div>
+      <div class="demographics-box">
+        <span class="text-sm">Date of Birth</span><br>
+        <span class="text-sm font-semibold">{{ birth_date if birth_date else "-" }}</span>
+      </div>
+      <div class="demographics-box">
+        <span class="text-sm">Age</span><br>
+        <span class="text-sm font-semibold">{{ age if age else "-" }}</span>
+      </div>
+      <div class="demographics-box">
+        <span class="text-sm">Marital Status</span><br>
+        <span class="text-sm font-semibold">{{ marital_display if marital_display else "-" }}</span>
+      </div>
+      <div class="demographics-box">
+        <span class="text-sm">Phone</span><br>
+        <span class="text-sm font-semibold">{{ phone if phone else "-" }}</span>
+      </div>
+      <div class="demographics-box">
+        <span class="text-sm">FHIR ID</span><br>
+        <span class="text-sm font-semibold">{{ ptid }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clinical Data Section: Vital Signs -->
+  <details class="mb-8" open>
+    <summary class="text-lg font-semibold text-gray-700 mb-2 px-4 cursor-pointer select-none">
+      &nbsp; Vital Signs
+    </summary>
+    <table class="w-full text-sm border border-gray-300 rounded bg-white">
+      <thead class="bg-gray-50 text-gray-600">
+        <tr>
+          <th class="px-4 py-2 border-b text-left">Date</th>
+          <th class="px-4 py-2 border-b text-left">Observation</th>
+          <th class="px-4 py-2 border-b text-left">Value</th>
+          <th class="px-4 py-2 border-b text-left">Unit</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if vitals.get("_error") %}
+        <tr>
+          <td colspan="4" class="px-4 py-2 text-red-600">Unable to load vital signs. Please try again.</td>
+        </tr>
+        {% else %}
+        {% for entry in vitals.get("entry", []) %}
+        {% set obs = entry.resource %}
+        <tr class="border-b border-gray-200 hover:bg-yellow-50">
+          <td class="px-4 py-2">{{ obs.effectiveDateTime[:10] if obs.effectiveDateTime else "—" }}</td>
+          <td class="px-4 py-2">{{ obs.code.coding[0].display if obs.code.coding else "—" }}</td>
+          <td class="px-4 py-2">
+            {% if obs.valueQuantity is defined %}
+              {{ obs.valueQuantity.value }}
+            {% elif obs.component is defined %}
+              {{ obs.component[0].valueQuantity.value }}/{{ obs.component[1].valueQuantity.value }}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td class="px-4 py-2">
+            {% if obs.valueQuantity is defined %}
+              {{ obs.valueQuantity.unit }}
+            {% elif obs.component is defined %}
+              mmHg
+            {% else %}
+              —
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" class="px-4 py-2 text-gray-500">No vital signs on record.</td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+  </details>
+
+  <!-- Clinical Data Section: Conditions -->
+  <details class="mb-8" open>
+    <summary class="text-lg font-semibold text-gray-700 mb-2 px-4 cursor-pointer select-none">
+      &nbsp; Conditions
+    </summary>
+    <table class="w-full text-sm border border-gray-300 rounded bg-white">
+      <thead class="bg-gray-50 text-gray-600">
+        <tr>
+          <th class="px-4 py-2 border-b text-left">Condition</th>
+          <th class="px-4 py-2 border-b text-left">Status</th>
+          <th class="px-4 py-2 border-b text-left">Onset</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if conditions.get("_error") %}
+        <tr>
+          <td colspan="3" class="px-4 py-2 text-red-600">Unable to load conditions. Please try again.</td>
+        </tr>
+        {% else %}
+        {% for entry in conditions.get("entry", []) %}
+        {% set cond = entry.resource %}
+        <tr class="border-b border-gray-200 hover:bg-yellow-50">
+          <td class="px-4 py-2">
+            {{ cond.code.text if cond.code.text else
+               (cond.code.coding[0].display if cond.code.coding else "—") }}
+          </td>
+          <td class="px-4 py-2">
+            {{ cond.clinicalStatus.coding[0].code | title
+               if cond.clinicalStatus and cond.clinicalStatus.coding else "—" }}
+          </td>
+          <td class="px-4 py-2">
+            {% if cond.onsetDateTime is defined %}
+              {{ cond.onsetDateTime[:10] }}
+            {% elif cond.onsetPeriod is defined %}
+              {{ cond.onsetPeriod.start[:10] }}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="3" class="px-4 py-2 text-gray-500">No conditions on record.</td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+  </details>
+
+  <!-- Clinical Data Section: Medications -->
+  <details class="mb-8" open>
+    <summary class="text-lg font-semibold text-gray-700 mb-2 px-4 cursor-pointer select-none">
+      &nbsp; Medications
+    </summary>
+    <table class="w-full text-sm border border-gray-300 rounded bg-white">
+      <thead class="bg-gray-50 text-gray-600">
+        <tr>
+          <th class="px-4 py-2 border-b text-left">Medication</th>
+          <th class="px-4 py-2 border-b text-left">Status</th>
+          <th class="px-4 py-2 border-b text-left">Authored</th>
+          <th class="px-4 py-2 border-b text-left">Instructions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if medications.get("_error") %}
+        <tr>
+          <td colspan="4" class="px-4 py-2 text-red-600">Unable to load medications. Please try again.</td>
+        </tr>
+        {% else %}
+        {% for entry in medications.get("entry", []) %}
+        {% set med = entry.resource %}
+        <tr class="border-b border-gray-200 hover:bg-yellow-50">
+          <td class="px-4 py-2">
+            {% if med.medicationCodeableConcept is defined %}
+              {{ med.medicationCodeableConcept.text if med.medicationCodeableConcept.text else
+                 (med.medicationCodeableConcept.coding[0].display
+                  if med.medicationCodeableConcept.coding else "—") }}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td class="px-4 py-2">{{ med.status | title if med.status else "—" }}</td>
+          <td class="px-4 py-2">{{ med.authoredOn[:10] if med.authoredOn is defined else "—" }}</td>
+          <td class="px-4 py-2">
+            {{ med.dosageInstruction[0].text
+               if med.dosageInstruction is defined and med.dosageInstruction else "—" }}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" class="px-4 py-2 text-gray-500">No medications on record.</td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+  </details>
+
+  <!-- Clinical Data Section: Allergies -->
+  <details class="mb-8" open>
+    <summary class="text-lg font-semibold text-gray-700 mb-2 px-4 cursor-pointer select-none">
+      &nbsp; Allergies
+    </summary>
+    <table class="w-full text-sm border border-gray-300 rounded bg-white">
+      <thead class="bg-gray-50 text-gray-600">
+        <tr>
+          <th class="px-4 py-2 border-b text-left">Substance</th>
+          <th class="px-4 py-2 border-b text-left">Status</th>
+          <th class="px-4 py-2 border-b text-left">Criticality</th>
+          <th class="px-4 py-2 border-b text-left">Reaction</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if allergies.get("_error") %}
+        <tr>
+          <td colspan="4" class="px-4 py-2 text-red-600">Unable to load allergies. Please try again.</td>
+        </tr>
+        {% else %}
+        {% for entry in allergies.get("entry", []) %}
+        {% set allergy = entry.resource %}
+        <tr class="border-b border-gray-200 hover:bg-yellow-50">
+          <td class="px-4 py-2">
+            {{ allergy.code.text if allergy.code.text else
+               (allergy.code.coding[0].display if allergy.code.coding else "—") }}
+          </td>
+          <td class="px-4 py-2">
+            {{ allergy.clinicalStatus.coding[0].code | title
+               if allergy.clinicalStatus and allergy.clinicalStatus.coding else "—" }}
+          </td>
+          <td class="px-4 py-2">{{ allergy.criticality | title if allergy.criticality else "—" }}</td>
+          <td class="px-4 py-2">
+            {% if allergy.reaction is defined and allergy.reaction %}
+              {{ allergy.reaction[0].manifestation[0].text
+                 if allergy.reaction[0].manifestation else "—" }}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" class="px-4 py-2 text-gray-500">No allergies on record.</td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+  </details>
+
+  </main>

@@ -68,6 +68,8 @@ def _patient_to_context(patient: dict) -> dict:
     if patient.get("meta") and patient["meta"].get("lastUpdated"):
         last_updated = patient["meta"]["lastUpdated"][:10]
 
+    patient_count = 12
+
     return {
         "first_name": first_name,
         "last_name": last_name,
@@ -78,6 +80,7 @@ def _patient_to_context(patient: dict) -> dict:
         "marital_status": marital_status,
         "marital_display": marital_display,
         "last_updated": last_updated,
+        "patient_count": patient_count,
     }
 
 
@@ -183,7 +186,7 @@ async def get_patient_activity(request: Request, ptid: str):
     except Exception:
         context["allergies"] = {"entry": [], "_error": True}
 
-    return templates.TemplateResponse(request, "activity.html", context)
+    return templates.TemplateResponse(request, "partials/view_patient_activity.html", context)
 
 
 @router.get("/Patient/{ptid}/view", response_class=HTMLResponse)

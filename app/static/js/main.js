@@ -101,7 +101,8 @@ function editPatient(ptid) {
 
 function activityPatient(ptid) {
   closePatientMenu();
-  window.location.href = `/Patient/${ptid}/activity`
+  htmx.ajax('GET', `/Patient/${ptid}/activity`, { target: '#result', swap: 'innerHTML' });
+  // window.location.href = `/Patient/${ptid}/activity`
 }
 
 function confirmDeletePatient(ptid) {

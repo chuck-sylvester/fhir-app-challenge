@@ -1,17 +1,25 @@
 <div class="text-left">
-  <div class="search-wrapper">
-    <input
-      type="search"
-      name="name"
-      id="search"
-      value="{{ name or '' }}"
-      placeholder="Search by name..."
-      hx-get="/Patient/table"
-      hx-trigger="keyup changed delay:500ms, search"
-      hx-target="#result"
-      hx-swap="innerHTML"
-    />
+
+  <div class="search-wrapper flex-row">
+    <div class="w-10/12">
+      <input
+        type="search"
+        name="name"
+        id="search"
+        value="{{ name or '' }}"
+        placeholder="Search by name..."
+        hx-get="/Patient/table"
+        hx-trigger="keyup changed delay:500ms, search"
+        hx-target="#result"
+        hx-swap="innerHTML"
+        class="w-full"
+      />
+    </div>
+    <div class="w-1/5 text-right">
+      Total <span class="text-blue-700 font-semibold">{{ results.get("total", 0) }}</span> patients &nbsp;&nbsp;
+    </div>
   </div>
+  
   <table class="w-full text-sm text-left border border-gray-300 rounded">
     <thead class="bg-gray-50 text-gray-600">
       <tr>
