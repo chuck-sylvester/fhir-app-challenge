@@ -131,7 +131,7 @@ Layout B is a natural evolution once Layout A is working.
 - [ ] **Phase 2** — Add FHIR service functions
 - [ ] **Phase 3** — Add the router endpoint  ← *first testable milestone*
 - [ ] **Phase 4** — Wire up the action menu
-- [ ] **Phase 5** — Complete the clinical template sections  ← *done*
+- [ ] **Phase 5** — Complete the clinical template sections and add collapsible headers  ← *done*
 
 ---
 
@@ -457,8 +457,6 @@ cause at this stage is a route ordering issue or a template variable name mismat
 
 ---
 
----
-
 # Phase 4: Wire Up the Action Menu
 
 **Goal:** Replace the placeholder `alert()` in **`app/static/js/main.js`** with real
@@ -512,8 +510,6 @@ The updated button block should look like:
   <i class="fa-regular fa-clock w-4"></i> Activity
 </button>
 ```
-
----
 
 ---
 
@@ -764,6 +760,119 @@ Observations have two value shapes: single-value (`valueQuantity`) and multi-com
   </table>
 </section>
 ```
+
+---
+
+## Task 5.5 — Add Collapsible Section Headers
+
+Each clinical section can be made collapsible so the user can hide sections they are not
+currently focused on. This is especially useful on patients with long medication or
+condition histories. Two options are documented below — Option A is the current
+implementation; Option B is a future enhancement to consider.
+
+---
+
+### Option A — Native `<details>` / `<summary>` (implemented)
+
+Replace each `<section>` wrapper and its `<h2>` header with a `<details>` / `<summary>`
+pair. The browser provides expand/collapse behavior natively — no JavaScript required.
+
+**Pattern applied to every clinical section:**
+
+```html
+<details class="mb-8" open>
+  <summary class="text-lg font-semibold text-gray-700 mb-2 px-4 cursor-pointer select-none">
+    &nbsp; Vital Signs
+  </summary>
+  <table class="w-full text-sm border border-gray-300 rounded bg-white">
+    ...
+  </table>
+</details>
+```
+
+Key attributes:
+
+| Attribute / Class | Purpose |
+|---|---|
+| `open` | Section starts expanded. Remove to start collapsed. |
+| `cursor-pointer` | Shows the hand cursor on hover, signaling the header is clickable. |
+| `select-none` | Prevents accidental text selection when clicking to toggle. |
+| `mb-2` on `<summary>` | Adds spacing between the header and the table below it. |
+
+**How it works:** The browser renders a small disclosure triangle to the left of the
+`<summary>` content. Clicking anywhere on the `<summary>` row toggles the `open`
+attribute on the `<details>` element, showing or hiding everything inside it that is
+not the `<summary>` itself. No JavaScript, no event listeners.
+
+**Limitation:** The browser-native disclosure triangle is minimal and its appearance
+varies slightly between browsers. It can be hidden with CSS if a custom icon is preferred
+(see Option B).
+
+---
+
+### Option B — Vanilla JS Toggle with Rotating Chevron (future enhancement)
+
+This approach replaces the browser's disclosure triangle with a FontAwesome chevron icon
+that rotates 180° on toggle — a widely recognized and visually polished pattern. It uses
+a single reusable function in `main.js` and is fully compatible with the rest of the
+app's existing JavaScript patterns.
+
+**Step 1 — Add `toggleSection()` to `main.js`:**
+
+```javascript
+function toggleSection(bodyId, iconId) {
+  const body = document.getElementById(bodyId);
+  const icon = document.getElementById(iconId);
+  body.classList.toggle('hidden');
+  icon.classList.toggle('rotate-180');
+}
+```
+
+**Step 2 — Replace each `<details>` block with a `<section>` using this pattern:**
+
+```html
+<section class="mb-8">
+  <div class="flex items-center justify-between mb-2 cursor-pointer"
+       onclick="toggleSection('vitals-body', 'vitals-icon')">
+    <h2 class="text-lg font-semibold text-gray-700 px-4">
+      &nbsp; Vital Signs
+    </h2>
+    <i id="vitals-icon"
+       class="fa-solid fa-chevron-down text-gray-400 transition-transform duration-200 mr-4">
+    </i>
+  </div>
+  <div id="vitals-body">
+    <table class="w-full text-sm border border-gray-300 rounded bg-white">
+      ...
+    </table>
+  </div>
+</section>
+```
+
+Repeat for each section with unique `id` pairs:
+
+| Section | Body ID | Icon ID |
+|---|---|---|
+| Vital Signs | `vitals-body` | `vitals-icon` |
+| Conditions | `conditions-body` | `conditions-icon` |
+| Medications | `medications-body` | `medications-icon` |
+| Allergies | `allergies-body` | `allergies-icon` |
+
+**How it works:** Clicking the header div calls `toggleSection()`, which adds/removes
+the Tailwind `hidden` class on the table wrapper div and adds/removes `rotate-180` on
+the chevron icon. Tailwind's `transition-transform duration-200` on the icon produces a
+smooth 200ms rotation animation. Sections start visible (no `hidden` class initially).
+
+**Comparison:**
+
+| | Option A (`<details>`) | Option B (JS chevron) |
+|---|---|---|
+| JavaScript required | None | ~6 lines in `main.js` |
+| Visual indicator | Browser default triangle | FontAwesome chevron (rotates) |
+| Animation | None (instant) | 200ms CSS rotation |
+| Starts expanded | Yes — `open` attribute | Yes — no `hidden` class |
+| Styling control | Limited | Full |
+| Cross-browser consistency | Minor triangle variation | Consistent |
 
 ---
 

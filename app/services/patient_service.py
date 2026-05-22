@@ -36,6 +36,62 @@ def get_patient(ptid: str = None, name: str | None = None):
     return output.json()
 
 
+def get_vitals(ptid: str) -> dict:
+    headers = {"Accept": "application/fhir+json"}
+    if settings.fhir_external_api_token:
+        headers["Authorization"] = f"Bearer {settings.fhir_external_api_token}"
+    params = {
+        "patient": ptid,
+        "category": "vital-signs",
+        "_sort": "-date",
+        "_count": 25,
+    }
+    output = requests.get(f"{settings.fhir_base_url}/Observation", headers=headers, params=params)
+    output.raise_for_status()
+    return output.json()
+
+
+def get_conditions(ptid: str) -> dict:
+    headers = {"Accept": "application/fhir+json"}
+    if settings.fhir_external_api_token:
+        headers["Authorization"] = f"Bearer {settings.fhir_external_api_token}"
+    params = {
+        "patient": ptid,
+        "_sort": "-recorded-date",
+        "_count": 25,
+    }
+    output = requests.get(f"{settings.fhir_base_url}/Condition", headers=headers, params=params)
+    output.raise_for_status()
+    return output.json()
+
+
+def get_medications(ptid: str) -> dict:
+    headers = {"Accept": "application/fhir+json"}
+    if settings.fhir_external_api_token:
+        headers["Authorization"] = f"Bearer {settings.fhir_external_api_token}"
+    params = {
+        "patient": ptid,
+        "_sort": "-authoredon",
+        "_count": 25,
+    }
+    output = requests.get(f"{settings.fhir_base_url}/MedicationRequest", headers=headers, params=params)
+    output.raise_for_status()
+    return output.json()
+
+
+def get_allergies(ptid: str) -> dict:
+    headers = {"Accept": "application/fhir+json"}
+    if settings.fhir_external_api_token:
+        headers["Authorization"] = f"Bearer {settings.fhir_external_api_token}"
+    params = {
+        "patient": ptid,
+        "_count": 25,
+    }
+    output = requests.get(f"{settings.fhir_base_url}/AllergyIntolerance", headers=headers, params=params)
+    output.raise_for_status()
+    return output.json()
+
+
 _MARITAL_DISPLAY = {
     "M": "Married",
     "D": "Divorced",

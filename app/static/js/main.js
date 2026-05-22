@@ -48,7 +48,7 @@ function patientAction(ptid, btn) {
 
     <button
       class="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100"
-      onclick="alert('Note: Patient Activity to be implemented in week 2.')"
+      onclick="activityPatient('${ptid}')"
     >
       <i class="fa-regular fa-clock w-4"></i> Activity
     </button>
@@ -97,6 +97,11 @@ function viewPatient(ptid) {
 function editPatient(ptid) {
   closePatientMenu();
   htmx.ajax('GET', `/Patient/${ptid}/edit`, { target: '#modal-root', swap: 'innerHTML' });
+}
+
+function activityPatient(ptid) {
+  closePatientMenu();
+  window.location.href = `/Patient/${ptid}/activity`
 }
 
 function confirmDeletePatient(ptid) {

@@ -157,6 +157,35 @@ async def post_patient(
 
 # --- Action-menu modal routes (must be registered before /{ptid} wildcard) ---
 
+@router.get("/Patient/{ptid}/activity", response_class=HTMLResponse)
+async def get_patient_activity(request: Request, ptid: str):
+    patient = patient_service.get_patient(ptid)
+    context = _patient_to_context(patient)
+    context["ptid"] = ptid
+
+    try:
+        context["vitals"] = patient_service.get_vitals(ptid)
+    except Exception:
+        context["vitals"] = {"entry": [], "_error": True}
+
+    try:
+        context["conditions"] = patient_service.get_conditions(ptid)
+    except Exception:
+        context["conditions"] = {"entry": [], "_error": True}
+
+    try:
+        context["medications"] = patient_service.get_medications(ptid)
+    except Exception:
+        context["medications"] = {"entry": [], "_error": True}
+
+    try:
+        context["allergies"] = patient_service.get_allergies(ptid)
+    except Exception:
+        context["allergies"] = {"entry": [], "_error": True}
+
+    return templates.TemplateResponse(request, "activity.html", context)
+
+
 @router.get("/Patient/{ptid}/view", response_class=HTMLResponse)
 async def get_patient_view(request: Request, ptid: str):
     patient = patient_service.get_patient(ptid)

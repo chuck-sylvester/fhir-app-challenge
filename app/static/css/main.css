@@ -9,3 +9,17 @@
     border-radius: 4px;
     padding: 4px 12px;
 }
+
+ .patient-demographics {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 3.0rem;
+      margin-top: 0.75rem;
+      align-items: flex-start;
+  }
+
+ .demographics-box {
+      padding-top: 8px;
+      padding-bottom: 8px;
+  }
