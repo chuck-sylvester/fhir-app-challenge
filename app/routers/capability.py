@@ -17,6 +17,6 @@ async def get_capability(request: Request):
     data = capability_service.get_capability()
     return templates.TemplateResponse(
         request,
-        "partials/get_capability_result.html",
+        "partials/get_capability_modal.html",
         {"results": data}
     )

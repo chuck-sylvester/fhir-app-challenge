@@ -65,15 +65,18 @@
             class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
           >
             <i class="fa-sharp-duotone fa-solid fa-chart-column"></i>
-            &nbsp;&nbsp;Report #1
+            &nbsp;&nbsp;Patient Census
           </a>
 
           <a
-            onclick="alert('Note:\nThis is a future enhancement...')"
+            href="/metadata"
+            hx-get="/metadata"
+            hx-target="#modal-root"
+            hx-swap="innerHTML"
             class="block rounded-md px-2 py-2 hover:bg-gray-300 hover:text-blue-700"
           >
             <i class="fa-sharp-duotone fa-solid fa-chart-column"></i>
-            &nbsp;&nbsp;Report #2
+            &nbsp;&nbsp;Capability Statement
           </a>
         </div>
         <!-- User Info & Logout Button -->

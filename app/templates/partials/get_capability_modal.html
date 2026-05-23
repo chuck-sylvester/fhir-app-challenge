@@ -1,0 +1,47 @@
+<div class="fixed inset-0 z-50">
+
+  <!-- Backdrop -->
+    <div
+      class="fixed inset-0 bg-black/40"
+      onclick="document.getElementById('modal-root').innerHTML = ''"
+    ></div>
+
+  <!-- Centering wrapper -->
+  <div class="fixed inset-0 flex items-center justify-center p-4">
+    <section
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="view-patient-title"
+      class="relative w-full max-w-lg rounded-lg bg-white shadow-xl"
+    >
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+      <h2 id="view-patient-title" class="text-lg font-semibold text-gray-800">FHIR Server Capability Statement</h2>
+      <button
+        type="button"
+        onclick="document.getElementById('modal-root').innerHTML = ''"
+        class="text-gray-400 hover:text-gray-600"
+        aria-label="close"
+      >
+        <i class="fa-solid fa-xmark fa-lg"></i>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="max-h-[70vh] overflow-auto py-5 space-y-5">
+
+    <!-- Content goes here  -->
+    <div class="text-left px-6">
+      <pre
+        class="whitespace-pre-wrap break-words font-mono text-sm"
+      ><span class="font-semibold">    resourceType:</span> {{ results.resourceType }}<br><span class="font-semibold">              id:</span> {{results.id}}<br><span class="font-semibold">            name:</span> {{results.name}}<br><span class="font-semibold">   software.name:</span> {{ results.software.name }}<br><span class="font-semibold">software.version:</span> {{ results.software.version }}
+      </pre>
+    </div>
+
+    </div>
+
+
+
+  </section>
+   </div>
+</div>
