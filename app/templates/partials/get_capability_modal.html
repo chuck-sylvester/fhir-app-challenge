@@ -1,47 +1,179 @@
 <div class="fixed inset-0 z-50">
 
   <!-- Backdrop -->
-    <div
-      class="fixed inset-0 bg-black/40"
-      onclick="document.getElementById('modal-root').innerHTML = ''"
-    ></div>
+  <div
+    class="fixed inset-0 bg-black/40"
+    onclick="document.getElementById('modal-root').innerHTML = ''"
+  ></div>
 
   <!-- Centering wrapper -->
   <div class="fixed inset-0 flex items-center justify-center p-4">
     <section
       role="dialog"
       aria-modal="true"
-      aria-labelledby="view-patient-title"
-      class="relative w-full max-w-lg rounded-lg bg-white shadow-xl"
+      aria-labelledby="capability-title"
+      class="relative w-full max-w-5xl rounded-lg bg-white shadow-xl"
     >
-    <!-- Header -->
-    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-      <h2 id="view-patient-title" class="text-lg font-semibold text-gray-800">FHIR Server Capability Statement</h2>
-      <button
-        type="button"
-        onclick="document.getElementById('modal-root').innerHTML = ''"
-        class="text-gray-400 hover:text-gray-600"
-        aria-label="close"
-      >
-        <i class="fa-solid fa-xmark fa-lg"></i>
-      </button>
-    </div>
+      <!-- Header -->
+      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div>
+          <h2 id="capability-title" class="text-lg font-semibold text-gray-800">
+            FHIR Server Capability Statement
+          </h2>
+          <p class="mt-1 text-xs font-mono text-gray-500">GET {{ server.base_url }}/metadata</p>
+        </div>
+        <button
+          type="button"
+          onclick="document.getElementById('modal-root').innerHTML = ''"
+          class="text-gray-400 hover:text-gray-600"
+          aria-label="Close"
+        >
+          <i class="fa-solid fa-xmark fa-lg"></i>
+        </button>
+      </div>
 
-    <!-- Body -->
-    <div class="max-h-[70vh] overflow-auto py-5 space-y-5">
+      <!-- Body -->
+      <div class="max-h-[70vh] overflow-auto px-6 py-5 space-y-6">
 
-    <!-- Content goes here  -->
-    <div class="text-left px-6">
-      <pre
-        class="whitespace-pre-wrap break-words font-mono text-sm"
-      ><span class="font-semibold">    resourceType:</span> {{ results.resourceType }}<br><span class="font-semibold">              id:</span> {{results.id}}<br><span class="font-semibold">            name:</span> {{results.name}}<br><span class="font-semibold">   software.name:</span> {{ results.software.name }}<br><span class="font-semibold">software.version:</span> {{ results.software.version }}
-      </pre>
-    </div>
+        {% if error %}
+        <div class="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {{ error }}
+        </div>
+        {% else %}
+        <section>
+          <h3 class="text-xs font-semibold uppercase text-gray-500">Server</h3>
+          <dl class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <dt class="text-xs font-medium text-gray-500">Resource Type</dt>
+              <dd class="mt-1 text-sm text-gray-900">{{ server.resource_type or "—" }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-gray-500">ID</dt>
+              <dd class="mt-1 text-sm text-gray-900">{{ server.id or "—" }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-gray-500">Name</dt>
+              <dd class="mt-1 text-sm text-gray-900">{{ server.name or "—" }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-gray-500">Title</dt>
+              <dd class="mt-1 text-sm text-gray-900">{{ server.title or "—" }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-gray-500">FHIR Version</dt>
+              <dd class="mt-1 text-sm text-gray-900">{{ server.fhir_version or "—" }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-gray-500">Status</dt>
+              <dd class="mt-1 text-sm text-gray-900 capitalize">{{ server.status or "—" }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-gray-500">Kind</dt>
+              <dd class="mt-1 text-sm text-gray-900 capitalize">{{ server.kind or "—" }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-gray-500">Publisher</dt>
+              <dd class="mt-1 text-sm text-gray-900">{{ server.publisher or "—" }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-gray-500">Date</dt>
+              <dd class="mt-1 text-sm text-gray-900">{{ server.date or "—" }}</dd>
+            </div>
+          </dl>
+        </section>
 
-    </div>
+        <hr class="border-gray-200">
 
+        <section>
+          <h3 class="text-xs font-semibold uppercase text-gray-500">Software & Implementation</h3>
+          <dl class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <dt class="text-xs font-medium text-gray-500">Software Name</dt>
+              <dd class="mt-1 text-sm text-gray-900">{{ software.name or "—" }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-gray-500">Software Version</dt>
+              <dd class="mt-1 text-sm text-gray-900">{{ software.version or "—" }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-gray-500">Release Date</dt>
+              <dd class="mt-1 text-sm text-gray-900">{{ software.release_date or "—" }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-gray-500">Implementation URL</dt>
+              <dd class="mt-1 break-words text-sm text-gray-900">{{ implementation.url or "—" }}</dd>
+            </div>
+            <div class="sm:col-span-2">
+              <dt class="text-xs font-medium text-gray-500">Implementation Description</dt>
+              <dd class="mt-1 text-sm text-gray-900">{{ implementation.description or "—" }}</dd>
+            </div>
+          </dl>
+        </section>
 
+        <hr class="border-gray-200">
 
-  </section>
-   </div>
+        <section>
+          <h3 class="text-xs font-semibold uppercase text-gray-500">REST Support</h3>
+          <dl class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <dt class="text-xs font-medium text-gray-500">Mode</dt>
+              <dd class="mt-1 text-sm text-gray-900 capitalize">{{ rest.mode or "—" }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-gray-500">Resource Types</dt>
+              <dd class="mt-1 text-sm text-gray-900">{{ rest.resource_count }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-gray-500">Operations</dt>
+              <dd class="mt-1 text-sm text-gray-900">{{ rest.operation_count }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-gray-500">Formats</dt>
+              <dd class="mt-1 text-sm text-gray-900">{{ formats | join(", ") if formats else "—" }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium text-gray-500">CORS</dt>
+              <dd class="mt-1 text-sm text-gray-900">
+                {% if security.cors is sameas true %}Supported{% elif security.cors is sameas false %}Not advertised{% else %}—{% endif %}
+              </dd>
+            </div>
+            <div class="sm:col-span-2 lg:col-span-3">
+              <dt class="text-xs font-medium text-gray-500">Security Services</dt>
+              <dd class="mt-1 text-sm text-gray-900">{{ security.services | join(", ") if security.services else "—" }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <hr class="border-gray-200">
+
+        <section>
+          <h3 class="text-xs font-semibold uppercase text-gray-500">Supported Resources</h3>
+          <div class="mt-3 rounded-md border border-gray-200 bg-white p-4">
+            {% if resources %}
+            <div class="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+              {% for resource in resources %}
+              <div class="text-sm font-medium text-gray-900">{{ resource.type }}</div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-center text-sm text-gray-500">No resource support advertised.</p>
+            {% endif %}
+          </div>
+        </section>
+
+        {% endif %}
+      </div>
+
+      <!-- Footer -->
+      <div class="px-6 py-4 border-t border-gray-200 flex justify-end">
+        <button
+          type="button"
+          onclick="document.getElementById('modal-root').innerHTML = ''"
+          class="rounded-md px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+        >
+          Close
+        </button>
+      </div>
+    </section>
+  </div>
 </div>

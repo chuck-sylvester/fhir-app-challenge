@@ -13,6 +13,10 @@ def get_capability():
         "Accept": "application/fhir+json"
     }
 
-    output = requests.get(f"{base_url}/metadata", headers=headers)
+    if settings.fhir_external_api_token:
+        headers["Authorization"] = f"Bearer {settings.fhir_external_api_token}"
+
+    output = requests.get(f"{base_url}/metadata", headers=headers, timeout=10)
+    output.raise_for_status()
 
     return output.json()
