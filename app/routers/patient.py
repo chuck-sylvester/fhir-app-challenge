@@ -30,7 +30,7 @@ templates.env.filters["age"] = _age_filter
 
 
 def _patient_to_context(patient: dict) -> dict:
-    """Extract display and form fields from a FHIR Patient resource dict."""
+    """Extract display and form fields from a complex FHIR Patient resource flat dict."""
     first_name = ""
     last_name = ""
     if patient.get("name"):
@@ -52,10 +52,13 @@ def _patient_to_context(patient: dict) -> dict:
             pass
 
     phone = ""
+    email = ""
     if patient.get("telecom"):
         for t in patient["telecom"]:
-            if t.get("system") == "phone":
+            if t.get("system") == "phone" and not phone:
                 phone = t.get("value", "")
+            elif t.get("system") == "email" and not email:
+                email = t.get("value", "")
                 break
 
     marital_status = ""
@@ -77,6 +80,7 @@ def _patient_to_context(patient: dict) -> dict:
         "birth_date": birth_date,
         "age": age,
         "phone": phone,
+        "email": email,
         "marital_status": marital_status,
         "marital_display": marital_display,
         "last_updated": last_updated,
@@ -142,10 +146,11 @@ async def post_patient(
     birth_date:     str = Form(...),
     marital_status: str = Form(""),
     phone:          str = Form(""),
+    email:          str = Form(""),
 ):
     try:
         patient_service.create_patient(
-            first_name, last_name, gender, birth_date, marital_status, phone
+            first_name, last_name, gender, birth_date, marital_status, phone, email
         )
     except Exception:
         return templates.TemplateResponse(
@@ -244,10 +249,11 @@ async def put_patient(
     birth_date:     str = Form(...),
     marital_status: str = Form(""),
     phone:          str = Form(""),
+    email:          str = Form(""),
 ):
     try:
         patient_service.update_patient(
-            ptid, first_name, last_name, gender, birth_date, marital_status, phone
+            ptid, first_name, last_name, gender, birth_date, marital_status, phone, email
         )
     except Exception:
         patient = patient_service.get_patient(ptid)

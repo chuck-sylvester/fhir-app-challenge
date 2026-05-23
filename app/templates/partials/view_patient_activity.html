@@ -23,6 +23,7 @@
   <!-- Patient Demographics Header -->
   <div class="bg-white rounded-sm border border-gray-300 px-6 pt-2 mb-6">
     <h1 class="text-xl font-semibold text-gray-900 pt-2">{{ first_name }} {{ last_name }}</h1>
+    <span class="text-xs pt-4">FHIR ID: {{ ptid }}</span>
     <div class="patient-demographics">
       <div class="demographics-box">
         <span class="text-sm">Gender</span><br>
@@ -41,12 +42,16 @@
         <span class="text-sm font-semibold">{{ marital_display if marital_display else "-" }}</span>
       </div>
       <div class="demographics-box">
+        <span class="text-sm">Veteran Status</span><br>
+        <span class="text-sm font-semibold">{{ veteran_display if veteran_display else "-" }}</span>
+      </div>
+      <div class="demographics-box">
         <span class="text-sm">Phone</span><br>
         <span class="text-sm font-semibold">{{ phone if phone else "-" }}</span>
       </div>
       <div class="demographics-box">
-        <span class="text-sm">FHIR ID</span><br>
-        <span class="text-sm font-semibold">{{ ptid }}</span>
+        <span class="text-sm">Email</span><br>
+        <span class="text-sm font-semibold">{{ email if email else "-" }}</span>
       </div>
     </div>
   </div>

@@ -101,8 +101,8 @@ _MARITAL_DISPLAY = {
 }
 
 
-def create_patient(first_name: str, last_name: str, gender: str,
-                   birth_date: str, marital_status: str, phone: str = ""):
+def create_patient(first_name: str, last_name: str, gender: str, birth_date: str,
+                   marital_status: str, phone: str = "", email: str = ""):
     new_patient = {
         "resourceType": "Patient",
         "active": True,
@@ -110,8 +110,15 @@ def create_patient(first_name: str, last_name: str, gender: str,
         "gender": gender,
         "birthDate": birth_date,
     }
+
+    telecom = []
     if phone:
-        new_patient["telecom"] = [{"system": "phone", "value": phone, "use": "home"}]
+        telecom.append({"system": "phone", "value": phone, "use": "home"})
+    if email:
+        telecom.append({"system": "email", "value": email, "use": "home"})
+    if telecom:
+        new_patient["telecom"] = telecom
+
     if marital_status:
         display = _MARITAL_DISPLAY.get(marital_status, marital_status)
         new_patient["maritalStatus"] = {
@@ -132,8 +139,8 @@ def create_patient(first_name: str, last_name: str, gender: str,
     return output.json()
 
 
-def update_patient(ptid: str, first_name: str, last_name: str, gender: str,
-                   birth_date: str, marital_status: str = "", phone: str = ""):
+def update_patient(ptid: str, first_name: str, last_name: str, gender: str, birth_date: str,
+                   marital_status: str = "", phone: str = "", email: str = ""):
     updated = {
         "resourceType": "Patient",
         "id": ptid,
@@ -142,8 +149,15 @@ def update_patient(ptid: str, first_name: str, last_name: str, gender: str,
         "gender": gender,
         "birthDate": birth_date,
     }
+
+    telecom = []
     if phone:
-        updated["telecom"] = [{"system": "phone", "value": phone, "use": "home"}]
+        telecom.append({"system": "phone", "value": phone, "use": "home"})
+    if email:
+        telecom.append({"system": "email", "value": email, "use": "home"})
+    if telecom:
+        updated["telecom"] = telecom
+
     if marital_status:
         display = _MARITAL_DISPLAY.get(marital_status, marital_status)
         updated["maritalStatus"] = {
