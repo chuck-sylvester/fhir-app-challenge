@@ -42,6 +42,20 @@ Every OCI compute instance must live inside a VCN. OCI provides a wizard that cr
 - If your key is not the default (`~/.ssh/id_ed25519`), specify it explicitly
 - Once connected, you will see the Ubuntu shell prompt
 
+```bash
+# Standard connection
+ssh ubuntu@<your-public-ip>
+
+# With a specific key file
+ssh -i ~/.ssh/id_ed25519 ubuntu@<your-public-ip>
+
+# Verbose mode — useful if the connection hangs or fails
+ssh -v ubuntu@<your-public-ip>
+
+# Keep the connection alive (prevents timeout on idle sessions)
+ssh -o ServerAliveInterval=60 ubuntu@<your-public-ip>
+```
+
 ---
 
 ## Environment Configuration
