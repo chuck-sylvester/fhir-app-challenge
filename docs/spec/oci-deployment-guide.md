@@ -145,3 +145,24 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 Navigate to `http://<OCI_PUBLIC_IP>:8000` to verify the login flow.
+
+## Run uvicorn in the background
+Keeps running after you close the SSH session.
+
+```bash
+nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload > uvicorn.log 2>&1 &
+
+## Confirm it started
+cat uvicorn.log
+```
+
+**Note:** `--host 0.0.0.0` is required on the VM.  
+The default `127.0.0.1` only accepts connections from localhost — the public internet cannot reach it.
+
+### Verify the deployment
+
+From your browser, visit:
+
+```
+http://<your-public-ip>:8000
+```
