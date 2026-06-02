@@ -1,28 +1,30 @@
-# -----------------------------------------------------------------
+# ---------------------------------------------------------------------
 # app/main.py
-# -----------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Run from project root directory:
 #       Command:  uvicorn app.main:app --reload --port 8000
 #    Access via:  localhost:8000
 #   Stop server:  CTRL + C
-# -----------------------------------------------------------------
+# ---------------------------------------------------------------------
 
 """Starting point for FHIR App Challenge Uvicorn Application."""
 
-# Main imports
+# Standard library imports
+import logging
+import os
+
+# Third-party imports
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.types import ASGIApp, Receive, Scope, Send
-import logging
-import os
 
 # Router imports
 from app.routers import capability, patient, auth
 
-# Settings object import from app-level config file
+# Settings object import
 from app.config import settings
 
 # Configure Python logging
@@ -105,7 +107,7 @@ app.include_router(patient.router, tags="patient")
 app.include_router(auth.router, tags="authentication")
 
 
-# Create temporary root route handler (later adjust for login flow)
+# Root route — renders the main patient view; AuthMiddleware enforces login before this is reached 
 @app.get("/", name="root", include_in_schema=False)
 async def home(request: Request):
     """Redirect to home page."""

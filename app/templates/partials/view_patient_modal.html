@@ -1,24 +1,41 @@
+<!-- ========================================================================
+  view_patient_modal.html
+  Partial template rendered into #modal-root by an HTMX hx-get response.
+  Closing the modal wipes #modal-root via innerHTML = ''. The outer
+  fixed+inset-0 div establishes full-screen layer above page content.
+  ======================================================================= -->
 <div class="fixed inset-0 z-50">
 
-  <!-- Backdrop -->
+  <!-- Backdrop
+       A semi-transparent black overlay that covers the full viewport.
+       Clicking it dismisses the modal by clearing modal-root. -->
   <div
     class="fixed inset-0 bg-black/40"
     onclick="document.getElementById('modal-root').innerHTML = ''"
   ></div>
 
-  <!-- Centering wrapper -->
+  <!-- Centering wrapper
+       flex + items-center + justify-center centers the modal card
+       both vertically and horizontally. p-4 adds breathing room on
+       small viewports so the card never touches screen edges. -->
   <div class="fixed inset-0 flex items-center justify-center p-4">
+    <!-- max-w-lg caps the card width (~512px). To go wider for a
+         three-column layout later, change this to max-w-2xl or
+         max-w-3xl. w-full lets it shrink on narrow screens. -->
     <section
       role="dialog"
       aria-modal="true"
       aria-labelledby="view-patient-title"
       class="relative w-full max-w-lg rounded-lg bg-white shadow-xl"
     >
-      <!-- Header -->
+      <!-- Header
+           flex + justify-between pushes the title left and the X
+           button right. border-b visually separates it from the body. -->
       <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
         <h2 id="view-patient-title" class="text-lg font-semibold text-gray-800">
           Patient Record
         </h2>
+        <!-- X (close) button — Font Awesome fa-xmark icon -->
         <button
           type="button"
           onclick="document.getElementById('modal-root').innerHTML = ''"
@@ -29,10 +46,15 @@
         </button>
       </div>
 
-      <!-- Body -->
+      <!-- Body
+           space-y-5 adds uniform vertical spacing between every
+           direct child block (name block, hr, demographics grid,
+           hr, metadata block). -->
       <div class="px-6 py-5 space-y-5">
 
-        <!-- Name and FHIR ID -->
+        <!-- Name and FHIR ID
+             Displayed at larger size to anchor the record visually.
+             font-mono on the FHIR ID makes the UUID easier to scan. -->
         <div>
           <p class="text-xl font-semibold text-gray-900">
             {{ first_name }} {{ last_name }}
@@ -44,7 +66,21 @@
 
         <hr class="border-gray-200">
 
-        <!-- Demographics -->
+        <!-- Demographics — two-column grid
+             grid-cols-2 + gap-4 lays out fields in two equal columns.
+             Each field uses the same label/value pattern:
+               - Label: text-xs, uppercase, muted gray (text-gray-500)
+               - Value: text-sm, darker gray (text-gray-800)
+             Current column order (left→right, top→bottom):
+               [Gender]         [Date of Birth]
+               [Marital Status] [Veteran Status]
+               [Phone]          [Email]
+             ─── ADD ADDRESS ROWS BELOW THE PHONE/EMAIL ROW ───
+             To add address in the same two-column format, add new
+             <div> blocks inside this same grid div. Each <div> is
+             one cell; two consecutive <div>s fill one row.
+             When you are ready to switch to three columns, change
+             grid-cols-2 to grid-cols-3 (and update max-w-lg above). -->
         <div class="grid grid-cols-2 gap-4">
           <div>
             <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Gender</p>
@@ -54,6 +90,8 @@
             <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Date of Birth</p>
             <p class="mt-1 text-sm text-gray-800">
               {{ birth_date if birth_date else "—" }}
+              <!-- age is passed as an integer (or None) from the router;
+                   the "is not none" check keeps "age 0" from being hidden -->
               {% if age is not none %}<span class="text-gray-400">(age {{ age }})</span>{% endif %}
             </p>
           </div>
@@ -73,19 +111,68 @@
             <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</p>
             <p class="mt-1 text-sm text-gray-800">{{ email if email else "—" }}</p>
           </div>
-        </div>
+
+          <div>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Address Line 1</p>
+            <p class="mt-1 text-sm text-gray-800">{{ addr_line1 if addr_line1 else "-"}}</p>
+          </div>
+          <div>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Address Line 2</p>
+            <p class="mt-1 text-sm text-gray-800">{{ addr_line2 if addr_line2 else "-"}}</p>
+          </div>
+          <div>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">City</p>
+            <p class="mt-1 text-sm text-gray-800">{{ addr_city if addr_city else "-"}}</p>
+          </div>
+          <div>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">State</p>
+            <p class="mt-1 text-sm text-gray-800">{{ addr_state if addr_state else "-"}}</p>
+          </div>
+          <div>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Postal Code</p>
+            <p class="mt-1 text-sm text-gray-800">{{ addr_postal if addr_postal else "-"}}</p>
+          </div>
+          <div>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Country</p>
+            <p class="mt-1 text-sm text-gray-800">{{ addr_country if addr_country else "-"}}</p>
+          </div>
+
+
+          <!-- ═══════════════════════════════════════════════════════════
+               INSERT ADDRESS FIELDS HERE (after Email row)
+
+               TWO-COLUMN LAYOUT (current):
+               Each <div> below is one grid cell. Two consecutive <div>s
+               fill one row left-to-right. Suggested pairing:
+                 Row: [Address Line 1]  [Address Line 2]
+                 Row: [City]            [State]
+                 Row: [Postal Code]     [Country]
+
+               THREE-COLUMN LAYOUT (future):
+               Change grid-cols-2 → grid-cols-3 on the grid div above,
+               and change max-w-lg → max-w-2xl on the <section> tag.
+               Suggested pairing with 6 address cells across 2 rows:
+                 Row: [Address Line 1]  [Address Line 2]  [City]
+                 Row: [State]           [Postal Code]     [Country]
+               ═══════════════════════════════════════════════════════════ -->
+
+        </div><!-- end demographics grid -->
 
         <hr class="border-gray-200">
 
-        <!-- FHIR Metadata -->
+        <!-- FHIR Metadata
+             Single-column block outside the grid. Sits below address
+             once address rows are added. -->
         <div>
           <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Last Updated</p>
           <p class="mt-1 text-sm text-gray-800">{{ last_updated if last_updated else "—" }}</p>
         </div>
 
-      </div>
+      </div><!-- end body -->
 
-      <!-- Footer -->
+      <!-- Footer
+           justify-end right-aligns the Close button.
+           border-t separates it from the body. -->
       <div class="px-6 py-4 border-t border-gray-200 flex justify-end">
         <button
           type="button"
