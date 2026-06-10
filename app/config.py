@@ -25,7 +25,9 @@ class Settings (BaseSettings):
     # FHIR server endpoints
     fhir_base_url: str
     fhir_local_url: str
-    fhir_external_url: str
+    fhir_base_url_external_1: str
+    fhir_base_url_external_2: str
+    fhir_base_url_external_3: str
     fhir_external_api_token: str = ""
 
     # PostgreSQL app database
