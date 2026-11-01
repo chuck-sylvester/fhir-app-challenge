@@ -54,12 +54,16 @@ See `docs/keycloak-auth-setup.md` for full setup instructions for both local and
 cp .env.example .env
 
 # Edit .env values for:  
-# POSTGRES_APP_PASSWORD, POSTGRES_HAPI_PASSWORD, KEYCLOAK_ADMIN_PASSWORD, KEYCLOAK_CLIENT_SECRET, SESSION_SECRET_KEY
+# POSTGRES_APP_PASSWORD, POSTGRES_HAPI_PASSWORD,
+# KEYCLOAK_ADMIN_PASSWORD, KEYCLOAK_CLIENT_SECRET,
+# SESSION_SECRET_KEY
 ```
 
 ### 2. Create Docker Infrastructure
 
-A complete Docker infrastructure is created via the project folder files:  
+For macOS development environments, be sure and start the Docker Desktop app.
+
+A complete Docker infrastructure is created via the project root scripts:  
 
 - `./docker-compose.yaml`
 - `./hapi.application.yaml`
@@ -81,7 +85,7 @@ curl http://localhost:8080/fhir/metadata | python3 -m json.tool | head -20
 
 # PostgreSQL — list databases (should show both medchallenge and hapifhir)
 # Note: you will be prompted for the facuser password
-psql -h localhost -p 5432 -U facuser -d fachallenge -c "\l"
+docker exec -it fac-postgres-db psql -h localhost -p 5432 -U fauser -d fachallenge -c "\l"
 
 # Keycloak — should return realm metadata JSON
 curl -s http://localhost:8180/realms/master | python3 -m json.tool | head -10
@@ -90,7 +94,7 @@ curl -s http://localhost:8180/realms/master | python3 -m json.tool | head -10
 ### 3. Set up Python environment
 
 ```bash
-python3 -m venv .venv
+python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```

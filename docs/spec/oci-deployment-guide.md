@@ -1,4 +1,4 @@
-# OCI Deployment Guide
+  # OCI Deployment Guide
 
 The FHIR App Challenge application is deployed to and hosted within the Oracle Cloud Infrastructure (OCI) environment. The initial configuration mirrors the local development environment as a _Lift and Shift_ to a single VM.  
 
@@ -22,7 +22,7 @@ cd ~/.ssh
 ls -al
 ```
 
-You will pasted the contents of the **public key** (`.pub` file) into the OCI console when creating the VM. Keep the private key on your Mac -- never share it.
+You will paste   the contents of the **public key** (`.pub` file) into the OCI console when creating the VM. Keep the private key on your Mac -- never share it.
 
 ### Set up your Virtual Cloud Network (VCN)
 
